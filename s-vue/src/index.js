@@ -1,4 +1,7 @@
-class SVue {
+import Dep from './dep'
+import Watch from './watcher'
+
+export default class SVue {
   constructor(options){
     this.$options = options
     // 数据响应化
@@ -16,6 +19,7 @@ class SVue {
   }
 
   defineReactive(obj, key, val) {
+    let dep = new Dep()
     Object.defineProperty(obj, key, {
       get() {
         return val
