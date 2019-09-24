@@ -6,6 +6,7 @@ export default class Watch {
   }
 
   update () {
-    console.log(Dep.target)
+    console.log('属性更新了')
+    // console.log(Dep.target)
   }
 }

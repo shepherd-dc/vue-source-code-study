@@ -8,6 +8,7 @@ export default class Dep {
   }
 
   notify () {
+    console.log(this.deps)
     this.deps.forEach(dep => {
       dep.update()
     })

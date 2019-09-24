@@ -129,6 +129,7 @@ function () {
   }, {
     key: "notify",
     value: function notify() {
+      console.log(this.deps);
       this.deps.forEach(function (dep) {
         dep.update();
       });
@@ -173,7 +174,14 @@ function () {
     this.$options = options; // 数据响应化
 
     this.$data = options.data;
-    this.observe(this.$data);
+    this.observe(this.$data); // 模拟watcher创建
+
+    new _watcher__WEBPACK_IMPORTED_MODULE_1__["default"]();
+    this.$data.test;
+    this.$data.test;
+    new _watcher__WEBPACK_IMPORTED_MODULE_1__["default"]();
+    this.$data.foo.bar;
+    this.$data.foo.baz;
   }
 
   _createClass(SVue, [{
@@ -195,12 +203,15 @@ function () {
       var dep = new _dep__WEBPACK_IMPORTED_MODULE_0__["default"]();
       Object.defineProperty(obj, key, {
         get: function get() {
+          _dep__WEBPACK_IMPORTED_MODULE_0__["default"].target && dep.addDep(_dep__WEBPACK_IMPORTED_MODULE_0__["default"].target); // console.log(dep.deps)
+
           return val;
         },
         set: function set(newVal) {
           if (newVal === val) return;
-          val = newVal;
-          console.log("".concat(key, "\u7684\u5C5E\u6027\u53D8\u5316\u4E86\uFF1A").concat(val));
+          val = newVal; // console.log(`${key}的属性变化了：${val}`)
+
+          dep.notify();
         }
       }); // 如果val还是一个对象，递归设置响应化
 
@@ -245,7 +256,7 @@ function () {
   _createClass(Watch, [{
     key: "update",
     value: function update() {
-      console.log(_dep__WEBPACK_IMPORTED_MODULE_0__["default"].target);
+      console.log('属性更新了'); // console.log(Dep.target)
     }
   }]);
 

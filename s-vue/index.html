@@ -14,14 +14,14 @@
       data: {
         test: 'Test text',
         foo: {
-          bar: {
-            baz: 'baz'
-          }
+          bar: 'bar',
+          baz: 'baz'
         }
       }
     })
     app.$data.test = 'Test text changed'
-    app.$data.foo.bar.baz = 'I am a new baz'
+    app.$data.foo.bar = 'I am a new bar'
+    app.$data.foo.baz = 'I am a new baz'
   </script>
 </body>
 </html>
