@@ -1,15 +1,18 @@
 const path = require('path')
-var webpack = require('webpack')
 module.exports = {
   entry: './src/index.js',
   output: {
-    path: path.join(__dirname, './dist'),
+    path: path.resolve(__dirname, './dist'),
     filename: 'svue.js',
-    library: 'Svue',
+    library: 'svue',
     libraryTarget: 'umd'
   },
   mode: 'development',
   devtool: 'source-map',
+  watch: true,
+  watchOptions: {
+    ignored: /node_modules/
+  },
   module: {
     rules: [
       {

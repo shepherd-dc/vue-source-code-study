@@ -1,7 +1,7 @@
 import Dep from './dep'
 import Watch from './watcher'
 
-export default class SVue {
+export class SVue {
   constructor(options){
     this.$options = options
     // 数据响应化
@@ -33,5 +33,4 @@ export default class SVue {
     // 如果val还是一个对象，递归设置响应化
     this.observe(val)
   }
-
 }
