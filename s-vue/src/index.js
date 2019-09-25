@@ -1,5 +1,5 @@
 import Dep from './dep'
-import Watch from './watcher'
+import Watcher from './watcher'
 
 export class SVue {
   constructor(options){
@@ -8,13 +8,15 @@ export class SVue {
     this.$data = options.data
     this.observe(this.$data)
 
-    // 模拟watcher创建
-    new Watch()
-    this.$data.test
-    this.$data.test
-    new Watch()
-    this.$data.foo.bar
-    this.$data.foo.baz
+    /* 新建一个Watcher观察者对象，这时候Dep.target会指向这个Watcher对象 */
+    new Watcher()
+    /* 在这里模拟render的过程，为了触发test属性的get函数 */
+    console.log('render...', this.$data.test + 1)
+    console.log('render...', this.$data.test + 2)
+
+    new Watcher()
+    console.log('render...', this.$data.foo.bar)
+    console.log('render...', this.$data.foo.baz)
   }
 
   observe(obj) {
@@ -27,17 +29,20 @@ export class SVue {
   }
 
   defineReactive(obj, key, val) {
-    let dep = new Dep()
+    const dep = new Dep()
     Object.defineProperty(obj, key, {
-      get() {
+      enumerable: true,
+      configurable: true,
+      get: function reactiveGetter() {
+        /* 将Dep.target（即当前的 Watcher对象存入dep的deps中） */
         Dep.target && dep.addDep(Dep.target)
         // console.log(dep.deps)
         return val
       },
-      set(newVal) {
+      set: function reactiveSetter(newVal) {
         if (newVal === val) return
         val = newVal
-        // console.log(`${key}的属性变化了：${val}`)
+        /* 在set的时候触发dep的notify来通知所有的Watcher对象更新视图 */
         dep.notify()
       }
     })

@@ -112,20 +112,26 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
+// Dep管理所有Watcher
 var Dep =
 /*#__PURE__*/
 function () {
   function Dep() {
     _classCallCheck(this, Dep);
 
+    /* 用来存放Watcher对象的数组 */
     this.deps = [];
   }
+  /* 在deps中添加一个Watcher对象 */
+
 
   _createClass(Dep, [{
     key: "addDep",
     value: function addDep(dep) {
       this.deps.push(dep);
     }
+    /* 通知所有Watcher对象更新视图 */
+
   }, {
     key: "notify",
     value: function notify() {
@@ -174,14 +180,17 @@ function () {
     this.$options = options; // 数据响应化
 
     this.$data = options.data;
-    this.observe(this.$data); // 模拟watcher创建
+    this.observe(this.$data);
+    /* 新建一个Watcher观察者对象，这时候Dep.target会指向这个Watcher对象 */
 
     new _watcher__WEBPACK_IMPORTED_MODULE_1__["default"]();
-    this.$data.test;
-    this.$data.test;
+    /* 在这里模拟render的过程，为了触发test属性的get函数 */
+
+    console.log('render...', this.$data.test + 1);
+    console.log('render...', this.$data.test + 2);
     new _watcher__WEBPACK_IMPORTED_MODULE_1__["default"]();
-    this.$data.foo.bar;
-    this.$data.foo.baz;
+    console.log('render...', this.$data.foo.bar);
+    console.log('render...', this.$data.foo.baz);
   }
 
   _createClass(SVue, [{
@@ -202,14 +211,18 @@ function () {
     value: function defineReactive(obj, key, val) {
       var dep = new _dep__WEBPACK_IMPORTED_MODULE_0__["default"]();
       Object.defineProperty(obj, key, {
-        get: function get() {
+        enumerable: true,
+        configurable: true,
+        get: function reactiveGetter() {
+          /* 将Dep.target（即当前的 Watcher对象存入dep的deps中） */
           _dep__WEBPACK_IMPORTED_MODULE_0__["default"].target && dep.addDep(_dep__WEBPACK_IMPORTED_MODULE_0__["default"].target); // console.log(dep.deps)
 
           return val;
         },
-        set: function set(newVal) {
+        set: function reactiveSetter(newVal) {
           if (newVal === val) return;
-          val = newVal; // console.log(`${key}的属性变化了：${val}`)
+          val = newVal;
+          /* 在set的时候触发dep的notify来通知所有的Watcher对象更新视图 */
 
           dep.notify();
         }
@@ -233,7 +246,6 @@ function () {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return Watch; });
 /* harmony import */ var _dep__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./dep */ "./src/dep.js");
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -243,27 +255,28 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
 
 
 
-var Watch =
+var Watcher =
 /*#__PURE__*/
 function () {
-  function Watch() {
-    _classCallCheck(this, Watch);
+  function Watcher() {
+    _classCallCheck(this, Watcher);
 
-    // 将当前watch实例指定到Dep静态属性target
+    // 将当前Watch实例指定到 Dep静态属性target, 在get中会用到
     _dep__WEBPACK_IMPORTED_MODULE_0__["default"].target = this;
   }
 
-  _createClass(Watch, [{
+  _createClass(Watcher, [{
     key: "update",
     value: function update() {
       console.log('属性更新了'); // console.log(Dep.target)
     }
   }]);
 
-  return Watch;
+  return Watcher;
 }();
 
-
+_dep__WEBPACK_IMPORTED_MODULE_0__["default"].target = null;
+/* harmony default export */ __webpack_exports__["default"] = (Watcher);
 
 /***/ })
 

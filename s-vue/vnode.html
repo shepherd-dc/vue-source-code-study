@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Vnode</title>
+  <script src="./src/vnode.js"></script>
+</head>
+<body>
+  <template>
+    <span class="demo" v-show="isShow">
+      This is a span.
+    </span>
+  </template>
+  <script>
+    function render () {
+      return new VNode(
+        'span',
+        {
+          /* 指令集合数组 */
+          directives: [
+            {
+              /* v-show指令 */
+              rawName: 'v-show',
+              expression: 'isShow',
+              name: 'show',
+              value: true
+            }
+          ],
+          /* 静态class */
+          staticClass: 'demo'
+        },
+        [ new VNode(undefined, undefined, undefined, 'This is a span.') ]
+      )
+    }
+
+    let vnode = render()
+    console.log('vnode:', vnode)
+
+    let emptyVnode = createEmptyVNode()
+    console.log('emptyVnode:', emptyVnode)
+
+    let textVNode = createTextVNode('Hi textVNode')
+    console.log('textVNode:', textVNode)
+
+    let clonedVNode = cloneVNode(vnode)
+    console.log('clonedVNode:', clonedVNode)
+
+  </script>
+</body>
+</html>
