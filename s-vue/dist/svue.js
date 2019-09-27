@@ -96,6 +96,94 @@ return /******/ (function(modules) { // webpackBootstrap
 /************************************************************************/
 /******/ ({
 
+/***/ "./src/compile.js":
+/*!************************!*\
+  !*** ./src/compile.js ***!
+  \************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+var Compile =
+/*#__PURE__*/
+function () {
+  function Compile(el, vm) {
+    _classCallCheck(this, Compile);
+
+    // 要遍历的宿主节点
+    this.$el = document.querySelector(el);
+    this.$vm = vm; // 编译
+
+    if (this.$el) {
+      // 转换内部内容为片段fragment
+      this.$fragment = this.node2Fragment(this.$el); // 执行编译
+
+      this.compile(this.$fragment); // 将编译完的html的结果追加至$el
+
+      this.$el.appendChild(this.$fragment);
+    }
+  }
+
+  _createClass(Compile, [{
+    key: "node2Fragment",
+    value: function node2Fragment(el) {
+      var frag = document.createDocumentFragment(); // 将el中所有子元素搬家至frag中
+
+      var child;
+
+      while (child = el.firstChild) {
+        frag.appendChild(child);
+      }
+
+      return frag;
+    }
+  }, {
+    key: "compile",
+    value: function compile(frag) {
+      var _this = this;
+
+      var childNodes = frag.childNodes;
+      Array.from(childNodes).forEach(function (node) {
+        // 类型判断
+        if (_this.isElement(node)) {
+          console.log('编译元素', node.nodeName);
+        } else if (_this.isInterpolation(node)) {
+          console.log('编译插值文本', node.textContent);
+        } // 递归子节点
+
+
+        if (node.childNodes && node.childNodes.length > 0) {
+          _this.compile(node);
+        }
+      });
+    }
+  }, {
+    key: "isElement",
+    value: function isElement(node) {
+      return node.nodeType === 1;
+    } // 插值文本
+
+  }, {
+    key: "isInterpolation",
+    value: function isInterpolation(node) {
+      return node.nodeType === 3 && /\{\{(.*)\}\}/.test(node.textContent);
+    }
+  }]);
+
+  return Compile;
+}();
+
+/* harmony default export */ __webpack_exports__["default"] = (Compile);
+
+/***/ }),
+
 /***/ "./src/dep.js":
 /*!********************!*\
   !*** ./src/dep.js ***!
@@ -161,6 +249,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "SVue", function() { return SVue; });
 /* harmony import */ var _dep__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./dep */ "./src/dep.js");
 /* harmony import */ var _watcher__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./watcher */ "./src/watcher.js");
+/* harmony import */ var _compile__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./compile */ "./src/compile.js");
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -168,6 +257,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
 
 
 
@@ -180,17 +270,16 @@ function () {
     this.$options = options; // 数据响应化
 
     this.$data = options.data;
-    this.observe(this.$data);
-    /* 新建一个Watcher观察者对象，这时候Dep.target会指向这个Watcher对象 */
+    this.observe(this.$data); // /* 新建一个Watcher观察者对象，这时候Dep.target会指向这个Watcher对象 */
+    // new Watcher()
+    // /* 在这里模拟render的过程，为了触发test属性的get函数 */
+    // console.log('render...', this.$data.test + 1)
+    // console.log('render...', this.$data.test + 2)
+    // new Watcher()
+    // console.log('render...', this.$data.foo.bar)
+    // console.log('render...', this.$data.foo.baz)
 
-    new _watcher__WEBPACK_IMPORTED_MODULE_1__["default"]();
-    /* 在这里模拟render的过程，为了触发test属性的get函数 */
-
-    console.log('render...', this.$data.test + 1);
-    console.log('render...', this.$data.test + 2);
-    new _watcher__WEBPACK_IMPORTED_MODULE_1__["default"]();
-    console.log('render...', this.$data.foo.bar);
-    console.log('render...', this.$data.foo.baz);
+    new _compile__WEBPACK_IMPORTED_MODULE_2__["default"](options.el, this);
   }
 
   _createClass(SVue, [{

@@ -1,5 +1,6 @@
 import Dep from './dep'
 import Watcher from './watcher'
+import Compile from './compile'
 
 export class SVue {
   constructor(options){
@@ -8,15 +9,17 @@ export class SVue {
     this.$data = options.data
     this.observe(this.$data)
 
-    /* 新建一个Watcher观察者对象，这时候Dep.target会指向这个Watcher对象 */
-    new Watcher()
-    /* 在这里模拟render的过程，为了触发test属性的get函数 */
-    console.log('render...', this.$data.test + 1)
-    console.log('render...', this.$data.test + 2)
+    // /* 新建一个Watcher观察者对象，这时候Dep.target会指向这个Watcher对象 */
+    // new Watcher()
+    // /* 在这里模拟render的过程，为了触发test属性的get函数 */
+    // console.log('render...', this.$data.test + 1)
+    // console.log('render...', this.$data.test + 2)
 
-    new Watcher()
-    console.log('render...', this.$data.foo.bar)
-    console.log('render...', this.$data.foo.baz)
+    // new Watcher()
+    // console.log('render...', this.$data.foo.bar)
+    // console.log('render...', this.$data.foo.baz)
+
+    new Compile(options.el, this)
   }
 
   observe(obj) {

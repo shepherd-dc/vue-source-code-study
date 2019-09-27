@@ -7,21 +7,42 @@
   <title>Vue原理</title>
 </head>
 <body>
+  <div id="app">
+    <p>{{test}}</p>
+    <p s-text="foo.bar"></p>
+    <p>{{foo.baz}}</p>
+    <input type="text" s-model="test">
+    <button @click="changeText">Change</button>
+    <div s-html="html"></div>
+  </div>
   <script src="./dist/svue.js"></script>
   <script>
-    let { SVue } = svue
-    let app = new SVue({
+    const { SVue } = svue
+    const app = new SVue({
+      el: '#app',
       data: {
         test: 'Test text',
         foo: {
           bar: 'bar',
           baz: 'baz'
+        },
+        html: '<button>按钮测试</button>'
+      },
+      created () {
+        console.log('created invoked')
+        setTimeout(() => {
+          this.test = 'Text changed in timer'
+        }, 1500)
+      },
+      methods: {
+        changeText () {
+          this.test = 'Text changed by function'
         }
       }
     })
-    app.$data.test = 'Test text changed'
-    app.$data.foo.bar = 'I am a new bar'
-    app.$data.foo.baz = 'I am a new baz'
+    // app.$data.test = 'Test text changed'
+    // app.$data.foo.bar = 'I am a new bar'
+    // app.$data.foo.baz = 'I am a new baz'
   </script>
 </body>
 </html>
