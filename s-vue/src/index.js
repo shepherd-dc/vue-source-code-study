@@ -20,6 +20,11 @@ export class SVue {
     // console.log('render...', this.$data.foo.baz)
 
     new Compile(options.el, this)
+
+    // 执行created钩子
+    if (options.created) {
+      options.created.call(this)
+    }
   }
 
   observe(obj) {

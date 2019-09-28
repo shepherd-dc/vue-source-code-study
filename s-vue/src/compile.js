@@ -29,9 +29,10 @@ class Compile {
     Array.from(childNodes).forEach(node => {
       // 类型判断
       if (this.isElement(node)) {
-        console.log('编译元素', node.nodeName)
+        // console.log('编译元素', node.nodeName)
       } else if (this.isInterpolation(node)) {
-        console.log('编译插值文本', node.textContent)
+        // console.log('编译插值文本', node.textContent)
+        this.compileText(node)
       }
       // 递归子节点
       if (node.childNodes && node.childNodes.length > 0) {
@@ -40,6 +41,18 @@ class Compile {
     })
   }
 
+  compileText (node) {
+    let exp = RegExp.$1
+    if (exp.indexOf('.') >= 0) {
+      let nest = exp.split('.')
+      // 只测试实现了一层嵌套
+      node.textContent = this.$vm.$data[nest[0]][nest[1]]
+    } else {
+      node.textContent = this.$vm.$data[exp]
+    }
+  }
+
+  // 原生标签
   isElement (node) {
     return node.nodeType === 1
   }

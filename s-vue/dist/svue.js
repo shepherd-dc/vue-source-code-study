@@ -152,10 +152,10 @@ function () {
       var childNodes = frag.childNodes;
       Array.from(childNodes).forEach(function (node) {
         // 类型判断
-        if (_this.isElement(node)) {
-          console.log('编译元素', node.nodeName);
+        if (_this.isElement(node)) {// console.log('编译元素', node.nodeName)
         } else if (_this.isInterpolation(node)) {
-          console.log('编译插值文本', node.textContent);
+          // console.log('编译插值文本', node.textContent)
+          _this.compileText(node);
         } // 递归子节点
 
 
@@ -164,6 +164,20 @@ function () {
         }
       });
     }
+  }, {
+    key: "compileText",
+    value: function compileText(node) {
+      var exp = RegExp.$1;
+
+      if (exp.indexOf('.') >= 0) {
+        var nest = exp.split('.'); // 只测试实现了一层嵌套
+
+        node.textContent = this.$vm.$data[nest[0]][nest[1]];
+      } else {
+        node.textContent = this.$vm.$data[exp];
+      }
+    } // 原生标签
+
   }, {
     key: "isElement",
     value: function isElement(node) {
@@ -279,7 +293,11 @@ function () {
     // console.log('render...', this.$data.foo.bar)
     // console.log('render...', this.$data.foo.baz)
 
-    new _compile__WEBPACK_IMPORTED_MODULE_2__["default"](options.el, this);
+    new _compile__WEBPACK_IMPORTED_MODULE_2__["default"](options.el, this); // 执行created钩子
+
+    if (options.created) {
+      options.created.call(this);
+    }
   }
 
   _createClass(SVue, [{
