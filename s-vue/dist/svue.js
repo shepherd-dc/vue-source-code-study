@@ -155,7 +155,25 @@ function () {
       var childNodes = frag.childNodes;
       Array.from(childNodes).forEach(function (node) {
         // 类型判断
-        if (_this.isElement(node)) {// console.log('编译元素', node.nodeName)
+        if (_this.isElement(node)) {
+          // console.log('编译元素', node.nodeName)
+          var nodeAttrs = node.attributes;
+          Array.from(nodeAttrs).forEach(function (attr) {
+            var attrName = attr.name; // 属性名
+
+            var exp = attr.value; // 属性值
+
+            if (_this.isDirective(attrName)) {
+              var dir = attrName.substring(2);
+              _this[dir] && _this[dir](node, _this.$vm, exp);
+            }
+
+            if (_this.isEvent(attrName)) {
+              var event = attrName.substring(1);
+
+              _this.eventHandler(node, _this.$vm, exp, event);
+            }
+          });
         } else if (_this.isInterpolation(node)) {
           // console.log('编译插值文本', node.textContent)
           _this.compileText(node);
@@ -197,9 +215,49 @@ function () {
       }
     }
   }, {
+    key: "text",
+    value: function text(node, vm, exp) {
+      this.update(node, vm, exp, 'text');
+    }
+  }, {
     key: "textUpdater",
     value: function textUpdater(node, val) {
       node.textContent = val;
+    } // 双向绑定
+
+  }, {
+    key: "model",
+    value: function model(node, vm, exp) {
+      // 指定input的value属性 :value
+      this.update(node, vm, exp, 'model'); // 视图对模型的响应 @input
+
+      node.addEventListener('input', function (e) {
+        vm[exp] = e.target.value;
+      });
+    }
+  }, {
+    key: "modelUpdater",
+    value: function modelUpdater(node, val) {
+      node.value = val;
+    }
+  }, {
+    key: "html",
+    value: function html(node, vm, exp) {
+      this.update(node, vm, exp, 'html');
+    }
+  }, {
+    key: "htmlUpdater",
+    value: function htmlUpdater(node, val) {
+      node.innerHTML = val;
+    }
+  }, {
+    key: "eventHandler",
+    value: function eventHandler(node, vm, exp, event) {
+      var fn = vm.$options.methods && vm.$options.methods[exp];
+
+      if (fn && event) {
+        node.addEventListener(event, fn.bind(vm));
+      }
     } // 原生标签
 
   }, {
@@ -212,6 +270,18 @@ function () {
     key: "isInterpolation",
     value: function isInterpolation(node) {
       return node.nodeType === 3 && /\{\{(.*)\}\}/.test(node.textContent);
+    } // 是否为指令
+
+  }, {
+    key: "isDirective",
+    value: function isDirective(attr) {
+      return attr.indexOf('s-') === 0;
+    } // 是否为事件
+
+  }, {
+    key: "isEvent",
+    value: function isEvent(attr) {
+      return attr.indexOf('@') === 0;
     }
   }]);
 

@@ -32,12 +32,13 @@
         console.log('created invoked')
         setTimeout(() => {
           this.test = 'Text changed in timer'
+          this.foo.bar = 'I\'m a new bar'
           this.foo.baz = 'I\'m a new baz'
         }, 1500)
       },
       methods: {
         changeText () {
-          this.test = 'Text changed by function'
+          this.test = 'Text changed by event'
         }
       }
     })

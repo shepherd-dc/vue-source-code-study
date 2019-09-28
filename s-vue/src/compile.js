@@ -31,6 +31,19 @@ class Compile {
       // 类型判断
       if (this.isElement(node)) {
         // console.log('编译元素', node.nodeName)
+        const nodeAttrs = node.attributes
+        Array.from(nodeAttrs).forEach(attr => {
+          const attrName = attr.name // 属性名
+          const exp = attr.value // 属性值
+          if (this.isDirective(attrName)) {
+            const dir = attrName.substring(2)
+            this[dir] && this[dir](node, this.$vm, exp)
+          }
+          if (this.isEvent(attrName)) {
+            const event = attrName.substring(1)
+            this.eventHandler(node, this.$vm, exp, event)
+          }
+        })
       } else if (this.isInterpolation(node)) {
         // console.log('编译插值文本', node.textContent)
         this.compileText(node)
@@ -66,8 +79,42 @@ class Compile {
     }
   }
 
+  text (node, vm, exp) {
+    this.update(node, vm, exp, 'text')
+  }
+
   textUpdater (node, val) {
     node.textContent = val
+  }
+
+  // 双向绑定
+  model (node, vm, exp) {
+    // 指定input的value属性 :value
+    this.update(node, vm, exp, 'model')
+
+    // 视图对模型的响应 @input
+    node.addEventListener('input', e => {
+      vm[exp] = e.target.value
+    })
+  }
+
+  modelUpdater (node, val) {
+    node.value = val
+  }
+
+  html (node, vm, exp) {
+    this.update(node, vm, exp, 'html')
+  }
+
+  htmlUpdater (node, val) {
+    node.innerHTML = val
+  }
+
+  eventHandler (node, vm, exp, event) {
+    let fn = vm.$options.methods && vm.$options.methods[exp]
+    if (fn && event) {
+      node.addEventListener(event, fn.bind(vm))
+    }
   }
 
   // 原生标签
@@ -78,6 +125,16 @@ class Compile {
   // 插值文本
   isInterpolation (node) {
     return node.nodeType === 3 && /\{\{(.*)\}\}/.test(node.textContent)
+  }
+
+  // 是否为指令
+  isDirective (attr) {
+    return attr.indexOf('s-') === 0
+  }
+
+  // 是否为事件
+  isEvent (attr) {
+    return attr.indexOf('@') === 0
   }
 
 }
