@@ -1,3 +1,4 @@
+import Watcher from './watcher'
 class Compile {
   constructor (el, vm) {
     // 要遍历的宿主节点
@@ -43,13 +44,30 @@ class Compile {
 
   compileText (node) {
     let exp = RegExp.$1
-    if (exp.indexOf('.') >= 0) {
-      let nest = exp.split('.')
-      // 只测试实现了一层嵌套
-      node.textContent = this.$vm.$data[nest[0]][nest[1]]
-    } else {
-      node.textContent = this.$vm.$data[exp]
+    this.update(node, this.$vm, exp, 'text')
+  }
+
+  update (node, vm, exp, dir) {
+    const updaterFn = this[dir + 'Updater']
+    if (updaterFn) {
+      // 初始化
+      if (exp.indexOf('.') >= 0) {
+        let nest = exp.split('.')
+        // 只测试实现了一层嵌套
+        updaterFn(node, vm[nest[0]][nest[1]])        
+      } else {
+        updaterFn(node, vm[exp])
+      }
+      // 依赖收集
+      const fn = (val) => {
+        updaterFn(node, val)
+      }
+      new Watcher(vm, exp, fn)
     }
+  }
+
+  textUpdater (node, val) {
+    node.textContent = val
   }
 
   // 原生标签

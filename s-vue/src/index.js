@@ -33,6 +33,8 @@ export class SVue {
     }
     Object.keys(obj).forEach(key => {
       this.defineReactive(obj, key, obj[key])
+      // 代理 $data到 SVue实例
+      this.proxyData(key)
     })
   }
 
@@ -57,4 +59,16 @@ export class SVue {
     // 如果val还是一个对象，递归设置响应化
     this.observe(val)
   }
+
+  proxyData (key) {
+    Object.defineProperty(this, key, {
+      get () {
+        return this.$data[key]
+      },
+      set (newVal) {
+        this.$data[key] = newVal
+      }
+    })
+  }
+
 }

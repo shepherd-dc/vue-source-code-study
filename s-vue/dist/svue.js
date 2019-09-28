@@ -105,11 +105,14 @@ return /******/ (function(modules) { // webpackBootstrap
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _watcher__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./watcher */ "./src/watcher.js");
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+
 
 var Compile =
 /*#__PURE__*/
@@ -168,14 +171,35 @@ function () {
     key: "compileText",
     value: function compileText(node) {
       var exp = RegExp.$1;
+      this.update(node, this.$vm, exp, 'text');
+    }
+  }, {
+    key: "update",
+    value: function update(node, vm, exp, dir) {
+      var updaterFn = this[dir + 'Updater'];
 
-      if (exp.indexOf('.') >= 0) {
-        var nest = exp.split('.'); // 只测试实现了一层嵌套
+      if (updaterFn) {
+        // 初始化
+        if (exp.indexOf('.') >= 0) {
+          var nest = exp.split('.'); // 只测试实现了一层嵌套
 
-        node.textContent = this.$vm.$data[nest[0]][nest[1]];
-      } else {
-        node.textContent = this.$vm.$data[exp];
+          updaterFn(node, vm[nest[0]][nest[1]]);
+        } else {
+          updaterFn(node, vm[exp]);
+        } // 依赖收集
+
+
+        var fn = function fn(val) {
+          updaterFn(node, val);
+        };
+
+        new _watcher__WEBPACK_IMPORTED_MODULE_0__["default"](vm, exp, fn);
       }
+    }
+  }, {
+    key: "textUpdater",
+    value: function textUpdater(node, val) {
+      node.textContent = val;
     } // 原生标签
 
   }, {
@@ -310,7 +334,10 @@ function () {
       }
 
       Object.keys(obj).forEach(function (key) {
-        _this.defineReactive(obj, key, obj[key]);
+        _this.defineReactive(obj, key, obj[key]); // 代理 $data到 SVue实例
+
+
+        _this.proxyData(key);
       });
     }
   }, {
@@ -336,6 +363,18 @@ function () {
       }); // 如果val还是一个对象，递归设置响应化
 
       this.observe(val);
+    }
+  }, {
+    key: "proxyData",
+    value: function proxyData(key) {
+      Object.defineProperty(this, key, {
+        get: function get() {
+          return this.$data[key];
+        },
+        set: function set(newVal) {
+          this.$data[key] = newVal;
+        }
+      });
     }
   }]);
 
@@ -365,24 +404,41 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
 var Watcher =
 /*#__PURE__*/
 function () {
-  function Watcher() {
+  function Watcher(vm, key, cb) {
     _classCallCheck(this, Watcher);
 
-    // 将当前Watch实例指定到 Dep静态属性target, 在get中会用到
-    _dep__WEBPACK_IMPORTED_MODULE_0__["default"].target = this;
+    this.vm = vm;
+    this.key = key;
+    this.cb = cb; // 将当前Watch实例指定到 Dep静态属性target, 在get中会用到
+
+    _dep__WEBPACK_IMPORTED_MODULE_0__["default"].target = this; // 读取属性模拟触发getter
+
+    this.isNested(key);
+    _dep__WEBPACK_IMPORTED_MODULE_0__["default"].target = null;
   }
 
   _createClass(Watcher, [{
     key: "update",
     value: function update() {
-      console.log('属性更新了'); // console.log(Dep.target)
+      this.cb.call(this.vm, this.isNested(this.key)); // console.log(Dep.target)
+    }
+  }, {
+    key: "isNested",
+    value: function isNested(key) {
+      if (key.indexOf('.') >= 0) {
+        var nest = key.split('.');
+        this.val = this.vm[nest[0]][nest[1]];
+      } else {
+        this.val = this.vm[key];
+      }
+
+      return this.val;
     }
   }]);
 
   return Watcher;
 }();
 
-_dep__WEBPACK_IMPORTED_MODULE_0__["default"].target = null;
 /* harmony default export */ __webpack_exports__["default"] = (Watcher);
 
 /***/ })
