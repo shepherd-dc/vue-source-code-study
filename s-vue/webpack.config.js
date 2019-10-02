@@ -1,10 +1,10 @@
 const path = require('path')
 module.exports = {
-  entry: './src/index.js',
+  entry: path.resolve(__dirname, './src/main.js'),
   output: {
     path: path.resolve(__dirname, './dist'),
     filename: 'svue.js',
-    library: 'svue',
+    library: 'SVue',
     libraryTarget: 'umd'
   },
   mode: 'development',

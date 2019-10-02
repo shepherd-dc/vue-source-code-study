@@ -1,5 +1,4 @@
 import Dep from './dep'
-import Watcher from './watcher'
 import Compile from './compile'
 
 export class SVue {
