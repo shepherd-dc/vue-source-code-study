@@ -91,51 +91,21 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "./src/main.js");
+/******/ 	return __webpack_require__(__webpack_require__.s = "./src/entry.js");
 /******/ })
 /************************************************************************/
 /******/ ({
 
-/***/ "./src/init.js":
-/*!*********************!*\
-  !*** ./src/init.js ***!
-  \*********************/
-/*! exports provided: init */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "init", function() { return init; });
-/* harmony import */ var _state__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./state */ "./src/state.js");
-
-function init(Vue) {
-  // 在vue原型上挂载`_init`初始化方法
-  Vue.prototype._init = function (options) {
-    var vm = this;
-    vm.$options = options; // 初始化状态：data
-
-    Object(_state__WEBPACK_IMPORTED_MODULE_0__["initState"])(vm); //模拟钩子函数
-
-    var created = options.created;
-
-    if (created && typeof created === 'function') {
-      created.call(vm);
-    }
-  };
-}
-
-/***/ }),
-
-/***/ "./src/main.js":
-/*!*********************!*\
-  !*** ./src/main.js ***!
-  \*********************/
+/***/ "./src/core/instance/index.js":
+/*!************************************!*\
+  !*** ./src/core/instance/index.js ***!
+  \************************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _init__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./init */ "./src/init.js");
+/* harmony import */ var _init__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./init */ "./src/core/instance/init.js");
 
 
 function SVue(options) {
@@ -147,10 +117,65 @@ Object(_init__WEBPACK_IMPORTED_MODULE_0__["init"])(SVue);
 
 /***/ }),
 
-/***/ "./src/state.js":
-/*!**********************!*\
-  !*** ./src/state.js ***!
-  \**********************/
+/***/ "./src/core/instance/init.js":
+/*!***********************************!*\
+  !*** ./src/core/instance/init.js ***!
+  \***********************************/
+/*! exports provided: init */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "init", function() { return init; });
+/* harmony import */ var _state__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./state */ "./src/core/instance/state.js");
+
+var uid = 0;
+function init(SVue) {
+  // 在vue原型上挂载`_init`初始化方法
+  SVue.prototype._init = function (options) {
+    var vm = this;
+    vm._uid = uid++;
+    vm.$options = options; // 初始化状态：data
+
+    Object(_state__WEBPACK_IMPORTED_MODULE_0__["initState"])(vm); //模拟钩子函数
+
+    var created = options.created;
+
+    if (created && typeof created === 'function') {
+      created.call(vm);
+    }
+
+    if (vm.$options.el) {
+      vm.$mount(vm.$options.el);
+    }
+  };
+}
+
+/***/ }),
+
+/***/ "./src/core/instance/lifecycle.js":
+/*!****************************************!*\
+  !*** ./src/core/instance/lifecycle.js ***!
+  \****************************************/
+/*! exports provided: mountComponent */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "mountComponent", function() { return mountComponent; });
+function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function mountComponent(vm, el) {
+  vm.$el = el;
+  console.log(_typeof(el), el);
+}
+
+/***/ }),
+
+/***/ "./src/core/instance/state.js":
+/*!************************************!*\
+  !*** ./src/core/instance/state.js ***!
+  \************************************/
 /*! exports provided: initState */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -187,6 +212,82 @@ function proxy(vm, sourcekey, key) {
       vm[sourcekey][key] = val;
     }
   });
+}
+
+/***/ }),
+
+/***/ "./src/entry.js":
+/*!**********************!*\
+  !*** ./src/entry.js ***!
+  \**********************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var web_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! web/runtime */ "./src/web/runtime/index.js");
+/* harmony import */ var web_util__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! web/util */ "./src/web/util/index.js");
+
+
+var mount = web_runtime__WEBPACK_IMPORTED_MODULE_0__["default"].prototype.$mount;
+
+web_runtime__WEBPACK_IMPORTED_MODULE_0__["default"].prototype.$mount = function (el) {
+  el = el && Object(web_util__WEBPACK_IMPORTED_MODULE_1__["query"])(el);
+  return mount.call(this, el);
+};
+
+/* harmony default export */ __webpack_exports__["default"] = (web_runtime__WEBPACK_IMPORTED_MODULE_0__["default"]);
+
+/***/ }),
+
+/***/ "./src/web/runtime/index.js":
+/*!**********************************!*\
+  !*** ./src/web/runtime/index.js ***!
+  \**********************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var core_instance__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! core/instance */ "./src/core/instance/index.js");
+/* harmony import */ var core_instance_lifecycle__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! core/instance/lifecycle */ "./src/core/instance/lifecycle.js");
+/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../util */ "./src/web/util/index.js");
+
+
+
+
+core_instance__WEBPACK_IMPORTED_MODULE_0__["default"].prototype.$mount = function (el) {
+  el = el ? Object(_util__WEBPACK_IMPORTED_MODULE_2__["query"])(el) : undefined;
+  return Object(core_instance_lifecycle__WEBPACK_IMPORTED_MODULE_1__["mountComponent"])(this, el);
+};
+
+/* harmony default export */ __webpack_exports__["default"] = (core_instance__WEBPACK_IMPORTED_MODULE_0__["default"]);
+
+/***/ }),
+
+/***/ "./src/web/util/index.js":
+/*!*******************************!*\
+  !*** ./src/web/util/index.js ***!
+  \*******************************/
+/*! exports provided: query */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "query", function() { return query; });
+function query(el) {
+  if (typeof el === 'string') {
+    var selected = document.querySelector(el);
+
+    if (!selected) {
+      console.error('Cannot find element: ' + el);
+      return document.createElement('div');
+    }
+
+    return selected;
+  } else {
+    return el;
+  }
 }
 
 /***/ })

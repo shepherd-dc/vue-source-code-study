@@ -1,6 +1,6 @@
 const path = require('path')
 module.exports = {
-  entry: path.resolve(__dirname, './src/main.js'),
+  entry: path.resolve(__dirname, './src/entry.js'),
   output: {
     path: path.resolve(__dirname, './dist'),
     filename: 'svue.js',
@@ -12,6 +12,13 @@ module.exports = {
   watch: true,
   watchOptions: {
     ignored: /node_modules/
+  },
+  resolve: {
+    alias: {
+      src: path.resolve(__dirname, 'src'),
+      core: path.resolve(__dirname, 'src/core'),
+      web: path.resolve(__dirname, 'src/web')
+    }
   },
   module: {
     rules: [
