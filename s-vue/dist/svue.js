@@ -106,9 +106,21 @@ return /******/ (function(modules) { // webpackBootstrap
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "init", function() { return init; });
+/* harmony import */ var _state__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./state */ "./src/state.js");
+
 function init(Vue) {
+  // 在vue原型上挂载`_init`初始化方法
   Vue.prototype._init = function (options) {
-    console.log(options);
+    var vm = this;
+    vm.$options = options; // 初始化状态：data
+
+    Object(_state__WEBPACK_IMPORTED_MODULE_0__["initState"])(vm); //模拟钩子函数
+
+    var created = options.created;
+
+    if (created && typeof created === 'function') {
+      created.call(vm);
+    }
   };
 }
 
@@ -132,6 +144,50 @@ function SVue(options) {
 
 Object(_init__WEBPACK_IMPORTED_MODULE_0__["init"])(SVue);
 /* harmony default export */ __webpack_exports__["default"] = (SVue);
+
+/***/ }),
+
+/***/ "./src/state.js":
+/*!**********************!*\
+  !*** ./src/state.js ***!
+  \**********************/
+/*! exports provided: initState */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "initState", function() { return initState; });
+function initState(vm) {
+  var opts = vm.$options; // 初始化data
+
+  if (opts.data) {
+    initData(vm);
+  }
+}
+
+function initData(vm) {
+  var data = vm.$options.data;
+  data = vm._data = typeof data === 'function' ? getData(data, vm) : data || {}; // 将data的属性代理到vue实例
+
+  Object.keys(data).forEach(function (key) {
+    proxy(vm, '_data', key);
+  });
+}
+
+function getData(data, vm) {
+  return data.call(vm, vm);
+}
+
+function proxy(vm, sourcekey, key) {
+  Object.defineProperty(vm, key, {
+    get: function get() {
+      return vm[sourcekey][key];
+    },
+    set: function set(val) {
+      vm[sourcekey][key] = val;
+    }
+  });
+}
 
 /***/ })
 

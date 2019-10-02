@@ -10,8 +10,19 @@
   <script src="../dist/svue.js"></script>
   <script>
     const svue = new SVue.default({
-      data: {
-        hello: 'world' 
+      // data: {
+      //   hello: 'world' 
+      // }
+      data () {
+        return {
+          msg: 'Hello world!',
+          foo: {
+            bar: 'bar'
+          }
+        }
+      },
+      created () {
+        console.log(this.foo.bar)
       }
     })
     console.log(svue)
