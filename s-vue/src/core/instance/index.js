@@ -1,9 +1,13 @@
-import { init } from './init'
+import { initMixin } from './init'
+import { lifecycleMixin } from './lifecycle'
+import { renderMixin } from './render'
 
 function SVue (options) {
   this._init(options)
 }
 
-init(SVue)
+initMixin(SVue)
+lifecycleMixin(SVue)
+renderMixin(SVue)
 
 export default SVue

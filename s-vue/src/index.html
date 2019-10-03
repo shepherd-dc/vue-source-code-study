@@ -8,24 +8,30 @@
 </head>
 <body>
   <script src="../dist/svue.js"></script>
-  <div id="app">
-    <script>
-      const svue = new SVue.default({
-        el: '#app',
-        data () {
-          return {
-            msg: 'Hello world!',
-            foo: {
-              bar: 'bar'
-            }
+  <div id="app"></div>
+  <script>
+    const svue = new SVue.default({
+      el: '#app',
+      render (h) {
+        return h('div', {
+          attrs: {
+            id: 'app'
           }
-        },
-        created () {
-          console.log(this.foo.bar)
+        }, this.msg)
+      },
+      data () {
+        return {
+          msg: 'Hello world!',
+          foo: {
+            bar: 'bar'
+          }
         }
-      })
-      console.log(svue)
-    </script>
-  </div>
+      },
+      created () {
+        console.log('created', this.foo.bar)
+      }
+    })
+    console.log(svue)
+  </script>
 </body>
 </html>
