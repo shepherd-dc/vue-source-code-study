@@ -1,4 +1,5 @@
 import VNode, { createTextVNode } from 'core/vdom/vnode'
+import { createComponent } from './create-component'
 import { isPrimitive } from '../util'
 
 const SIMPLE_NORMALIZE = 1
@@ -24,9 +25,9 @@ export function createElement (
 }
 
 function _createElement (
-  context,
-  tag,
-  data,
+  context, // Component
+  tag, // string | Class<Component> | Function | Object
+  data, // VNodeData
   children,
   normalizationType
 ) {
@@ -37,7 +38,12 @@ function _createElement (
   }
   let vnode
   if (typeof tag === 'string') {
+    // dom原生保留标签
     vnode = new VNode(tag, data, children, undefined, undefined, context)
+  } else {
+    // 组件
+    debugger
+    vnode = createComponent(tag, data, context, children)
   }
   return vnode
 }
@@ -65,7 +71,7 @@ function normalizeArrayChildren (children) {
   for (i = 0; i < children.length; i++) {
     c = children[i]
     if (!c || typeof c === 'boolean') continue
-    res.push(c)
+    res.push(createTextVNode(c))
   }
   return res
 }

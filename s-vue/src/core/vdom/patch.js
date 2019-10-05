@@ -14,12 +14,18 @@ export function createPatchFunction () {
     parentElm,
     refElm
   ) {
+    const data = vnode.data
     const children = vnode.children
     const tag = vnode.tag
     if (tag) {
       vnode.elm = nodeOps.createElement(tag, vnode)
       // createChildren
       createChildren(vnode, children, insertedVnodeQueue)
+      // 处理 html属性
+      if (data) {
+        // invokeCreateHooks(vnode, insertedVnodeQueue)
+        console.log(data)
+      }
       insert(parentElm, vnode.elm, refElm)
     } else {
       vnode.elm = nodeOps.createTextNode(vnode.text)

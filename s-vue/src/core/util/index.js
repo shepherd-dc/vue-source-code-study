@@ -1,11 +1,2 @@
-/**
- * Check if value is primitive.
- */
-export function isPrimitive (value) {
-  return (
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'symbol' ||
-    typeof value === 'boolean'
-  )
-}
+export * from './options'
+export * from 'shared/util'

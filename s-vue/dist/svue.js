@@ -96,6 +96,110 @@ return /******/ (function(modules) { // webpackBootstrap
 /************************************************************************/
 /******/ ({
 
+/***/ "./src/core/global-api/extend.js":
+/*!***************************************!*\
+  !*** ./src/core/global-api/extend.js ***!
+  \***************************************/
+/*! exports provided: initExtend */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "initExtend", function() { return initExtend; });
+/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../util */ "./src/core/util/index.js");
+
+function initExtend(SVue) {
+  /**
+   * Each instance constructor, including Vue, has a unique
+   * cid. This enables us to create wrapped "child
+   * constructors" for prototypal inheritance and cache them.
+   */
+  SVue.cid = 0;
+  var cid = 1;
+  /**
+   * Class inheritance
+   */
+
+  SVue.extend = function (extendOptions) {
+    extendOptions = extendOptions || {};
+    var Super = this;
+    var SuperId = Super.cid;
+    var cachedCtors = extendOptions._Ctor || (extendOptions._Ctor = {});
+
+    if (cachedCtors[SuperId]) {
+      return cachedCtors[SuperId];
+    }
+
+    var name = extendOptions.name || Super.options.name; // Vue子构造器
+
+    var Sub = function SVueComponent(options) {
+      this._init(options);
+    };
+
+    Sub.prototype = Object.create(Super.prototype);
+    Sub.prototype.constructor = Sub;
+    Sub.cid = cid++;
+    Sub.options = Object(_util__WEBPACK_IMPORTED_MODULE_0__["mergeOptions"])(Super.options, extendOptions);
+    Sub['super'] = Super; // allow further extension/mixin/plugin usage
+
+    Sub.extend = Super.extend; // enable recursive self-lookup
+
+    if (name) {
+      Sub.options.components[name] = Sub;
+    } // keep a reference to the super options at extension time.
+    // later at instantiation we can check if Super's options have
+    // been updated.
+
+
+    Sub.superOptions = Super.options;
+    Sub.extendOptions = extendOptions;
+    Sub.sealedOptions = Object(_util__WEBPACK_IMPORTED_MODULE_0__["extend"])({}, Sub.options); // cache constructor
+
+    cachedCtors[SuperId] = Sub;
+    return Sub;
+  };
+}
+
+/***/ }),
+
+/***/ "./src/core/global-api/index.js":
+/*!**************************************!*\
+  !*** ./src/core/global-api/index.js ***!
+  \**************************************/
+/*! exports provided: initGlobalAPI */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "initGlobalAPI", function() { return initGlobalAPI; });
+/* harmony import */ var _extend__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./extend */ "./src/core/global-api/extend.js");
+
+function initGlobalAPI(SVue) {
+  SVue.options = Object.create(null);
+  SVue.options._base = SVue;
+  Object(_extend__WEBPACK_IMPORTED_MODULE_0__["initExtend"])(SVue);
+}
+
+/***/ }),
+
+/***/ "./src/core/index.js":
+/*!***************************!*\
+  !*** ./src/core/index.js ***!
+  \***************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _instance_index__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./instance/index */ "./src/core/instance/index.js");
+/* harmony import */ var _global_api_index__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./global-api/index */ "./src/core/global-api/index.js");
+
+
+Object(_global_api_index__WEBPACK_IMPORTED_MODULE_1__["initGlobalAPI"])(_instance_index__WEBPACK_IMPORTED_MODULE_0__["default"]);
+/* harmony default export */ __webpack_exports__["default"] = (_instance_index__WEBPACK_IMPORTED_MODULE_0__["default"]);
+
+/***/ }),
+
 /***/ "./src/core/instance/index.js":
 /*!************************************!*\
   !*** ./src/core/instance/index.js ***!
@@ -127,14 +231,18 @@ Object(_render__WEBPACK_IMPORTED_MODULE_2__["renderMixin"])(SVue);
 /*!***********************************!*\
   !*** ./src/core/instance/init.js ***!
   \***********************************/
-/*! exports provided: initMixin */
+/*! exports provided: initMixin, initInternalComponent, resolveConstructorOptions */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "initMixin", function() { return initMixin; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "initInternalComponent", function() { return initInternalComponent; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "resolveConstructorOptions", function() { return resolveConstructorOptions; });
 /* harmony import */ var _state__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./state */ "./src/core/instance/state.js");
 /* harmony import */ var _render__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./render */ "./src/core/instance/render.js");
+/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../util */ "./src/core/util/index.js");
+
 
 
 var uid = 0;
@@ -142,8 +250,19 @@ function initMixin(SVue) {
   // 在vue原型上挂载`_init`初始化方法
   SVue.prototype._init = function (options) {
     var vm = this;
-    vm._uid = uid++;
-    vm.$options = options; // 初始化状态：data
+    vm._uid = uid++; // a flag to avoid this being observed
+
+    vm._isVue = true; // merge options
+
+    if (options && options._isComponent) {
+      // optimize internal component instantiation
+      // since dynamic options merging is pretty slow, and none of the
+      // internal component options needs special treatment.
+      initInternalComponent(vm, options);
+    } else {
+      vm.$options = Object(_util__WEBPACK_IMPORTED_MODULE_2__["mergeOptions"])(resolveConstructorOptions(vm.constructor), options || {}, vm);
+    } // 初始化状态：data
+
 
     Object(_state__WEBPACK_IMPORTED_MODULE_0__["initState"])(vm); // 初始化render --> vm.$createElement
 
@@ -159,6 +278,66 @@ function initMixin(SVue) {
       vm.$mount(vm.$options.el);
     }
   };
+}
+function initInternalComponent(vm, options) {
+  var opts = vm.$options = Object.create(vm.constructor.options); // doing this because it's faster than dynamic enumeration.
+
+  var parentVnode = options._parentVnode;
+  opts.parent = options.parent;
+  opts._parentVnode = parentVnode;
+  var vnodeComponentOptions = parentVnode.componentOptions;
+  opts.propsData = vnodeComponentOptions.propsData;
+  opts._parentListeners = vnodeComponentOptions.listeners;
+  opts._renderChildren = vnodeComponentOptions.children;
+  opts._componentTag = vnodeComponentOptions.tag;
+
+  if (options.render) {
+    opts.render = options.render;
+    opts.staticRenderFns = options.staticRenderFns;
+  }
+}
+function resolveConstructorOptions(Ctor) {
+  var options = Ctor.options;
+
+  if (Ctor["super"]) {
+    var superOptions = resolveConstructorOptions(Ctor["super"]);
+    var cachedSuperOptions = Ctor.superOptions;
+
+    if (superOptions !== cachedSuperOptions) {
+      // super option changed,
+      // need to resolve new options.
+      Ctor.superOptions = superOptions; // check if there are any late-modified/attached options (#4976)
+
+      var modifiedOptions = resolveModifiedOptions(Ctor); // update base extend options
+
+      if (modifiedOptions) {
+        Object(_util__WEBPACK_IMPORTED_MODULE_2__["extend"])(Ctor.extendOptions, modifiedOptions);
+      }
+
+      options = Ctor.options = Object(_util__WEBPACK_IMPORTED_MODULE_2__["mergeOptions"])(superOptions, Ctor.extendOptions);
+
+      if (options.name) {
+        options.components[options.name] = Ctor;
+      }
+    }
+  }
+
+  return options;
+}
+
+function resolveModifiedOptions(Ctor) {
+  var modified;
+  var latest = Ctor.options;
+  var sealed = Ctor.sealedOptions;
+
+  for (var key in latest) {
+    if (latest[key] !== sealed[key]) {
+      if (!modified) modified = {};
+      modified[key] = latest[key];
+    }
+  }
+
+  return modified;
 }
 
 /***/ }),
@@ -207,18 +386,37 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "renderMixin", function() { return renderMixin; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "initRender", function() { return initRender; });
 /* harmony import */ var _vdom_create_element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../vdom/create-element */ "./src/core/vdom/create-element.js");
+/* harmony import */ var _vdom_vnode__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../vdom/vnode */ "./src/core/vdom/vnode.js");
+
  // SVue.prototype._render
 
 function renderMixin(SVue) {
   SVue.prototype._render = function () {
     var vm = this;
-    var render = vm.$options.render;
-    var vnode = render.call(vm, vm.$createElement);
+    var _vm$$options = vm.$options,
+        render = _vm$$options.render,
+        _parentVnode = _vm$$options._parentVnode;
+    vm.$vnode = _parentVnode;
+    var vnode;
+    vnode = render.call(vm, vm.$createElement); // return empty vnode in case the render function errored out
+
+    if (!(vnode instanceof _vdom_vnode__WEBPACK_IMPORTED_MODULE_1__["default"])) {
+      vnode = Object(_vdom_vnode__WEBPACK_IMPORTED_MODULE_1__["createEmptyVNode"])();
+    } // set parent
+
+
+    vnode.parent = _parentVnode;
     return vnode;
   };
 }
 function initRender(vm) {
-  // vm.$createElement 用户自定义render时使用
+  vm._vnode = null; // the root of the child tree
+
+  var options = vm.$options;
+  var parentVnode = vm.$vnode = options._parentVnode; // the placeholder node in parent tree
+
+  var renderContext = parentVnode && parentVnode.context; // vm.$createElement 用户自定义render时使用
+
   vm.$createElement = function (a, b, c, d) {
     return Object(_vdom_create_element__WEBPACK_IMPORTED_MODULE_0__["createElement"])(vm, a, b, c, d, true);
   };
@@ -274,19 +472,271 @@ function proxy(vm, sourcekey, key) {
 /*!********************************!*\
   !*** ./src/core/util/index.js ***!
   \********************************/
-/*! exports provided: isPrimitive */
+/*! exports provided: mergeOptions, isPrimitive, hasOwn, extend */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isPrimitive", function() { return isPrimitive; });
-function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+/* harmony import */ var _options__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./options */ "./src/core/util/options.js");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "mergeOptions", function() { return _options__WEBPACK_IMPORTED_MODULE_0__["mergeOptions"]; });
+
+/* harmony import */ var shared_util__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! shared/util */ "./src/shared/util.js");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "isPrimitive", function() { return shared_util__WEBPACK_IMPORTED_MODULE_1__["isPrimitive"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "hasOwn", function() { return shared_util__WEBPACK_IMPORTED_MODULE_1__["hasOwn"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "extend", function() { return shared_util__WEBPACK_IMPORTED_MODULE_1__["extend"]; });
+
+
+
+
+/***/ }),
+
+/***/ "./src/core/util/options.js":
+/*!**********************************!*\
+  !*** ./src/core/util/options.js ***!
+  \**********************************/
+/*! exports provided: mergeOptions */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "mergeOptions", function() { return mergeOptions; });
+/* harmony import */ var shared_constants__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! shared/constants */ "./src/shared/constants.js");
+/* harmony import */ var shared_util__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! shared/util */ "./src/shared/util.js");
+
 
 /**
- * Check if value is primitive.
+ * Option overwriting strategies are functions that handle
+ * how to merge a parent option value and a child option
+ * value into the final value.
  */
-function isPrimitive(value) {
-  return typeof value === 'string' || typeof value === 'number' || _typeof(value) === 'symbol' || typeof value === 'boolean';
+
+var strats = Object.create(null);
+/**
+ * Hooks and props are merged as arrays.
+ */
+
+function mergeHook(parentVal, childVal) {
+  var res = childVal ? parentVal ? parentVal.concat(childVal) : Array.isArray(childVal) ? childVal : [childVal] : parentVal;
+  return res ? dedupeHooks(res) : res;
+}
+
+function dedupeHooks(hooks) {
+  var res = [];
+
+  for (var i = 0; i < hooks.length; i++) {
+    if (res.indexOf(hooks[i]) === -1) {
+      res.push(hooks[i]);
+    }
+  }
+
+  return res;
+}
+
+shared_constants__WEBPACK_IMPORTED_MODULE_0__["LIFECYCLE_HOOKS"].forEach(function (hook) {
+  strats[hook] = mergeHook;
+});
+/**
+ * Assets
+ *
+ * When a vm is present (instance creation), we need to do
+ * a three-way merge between constructor options, instance
+ * options and parent options.
+ */
+
+function mergeAssets(parentVal, childVal, vm, key) {
+  var res = Object.create(parentVal || null);
+
+  if (childVal) {
+     true && assertObjectType(key, childVal, vm);
+    return Object(shared_util__WEBPACK_IMPORTED_MODULE_1__["extend"])(res, childVal);
+  } else {
+    return res;
+  }
+}
+
+shared_constants__WEBPACK_IMPORTED_MODULE_0__["ASSET_TYPES"].forEach(function (type) {
+  strats[type + 's'] = mergeAssets;
+});
+/**
+ * Default strategy.
+ */
+
+var defaultStrat = function defaultStrat(parentVal, childVal) {
+  return childVal === undefined ? parentVal : childVal;
+};
+/**
+ * Merge two option objects into a new one.
+ * Core utility used in both instantiation and inheritance.
+ */
+
+
+function mergeOptions(parent, child, vm) {
+  if (typeof child === 'function') {
+    child = child.options;
+  } // Apply extends and mixins on the child options,
+  // but only if it is a raw options object that isn't
+  // the result of another mergeOptions call.
+  // Only merged options has the _base property.
+
+
+  if (!child._base) {
+    if (child["extends"]) {
+      parent = mergeOptions(parent, child["extends"], vm);
+    }
+
+    if (child.mixins) {
+      for (var i = 0, l = child.mixins.length; i < l; i++) {
+        parent = mergeOptions(parent, child.mixins[i], vm);
+      }
+    }
+  }
+
+  var options = {};
+  var key;
+
+  for (key in parent) {
+    mergeField(key);
+  }
+
+  for (key in child) {
+    if (!Object(shared_util__WEBPACK_IMPORTED_MODULE_1__["hasOwn"])(parent, key)) {
+      mergeField(key);
+    }
+  }
+
+  function mergeField(key) {
+    var strat = strats[key] || defaultStrat;
+    options[key] = strat(parent[key], child[key], vm, key);
+  }
+
+  return options;
+}
+
+/***/ }),
+
+/***/ "./src/core/vdom/create-component.js":
+/*!*******************************************!*\
+  !*** ./src/core/vdom/create-component.js ***!
+  \*******************************************/
+/*! exports provided: createComponent, createComponentInstanceForVnode */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "createComponent", function() { return createComponent; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "createComponentInstanceForVnode", function() { return createComponentInstanceForVnode; });
+/* harmony import */ var _vnode__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./vnode */ "./src/core/vdom/vnode.js");
+/* harmony import */ var core_instance_init__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! core/instance/init */ "./src/core/instance/init.js");
+function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+
+ // inline hooks to be invoked on component VNodes during patch
+
+var componentVNodeHooks = {
+  init: function init(vnode) {
+    var child = vnode.componentInstance = createComponentInstanceForVnode(vnode, activeInstance);
+    child.$mount(undefined);
+  },
+  prepatch: function prepatch(oldVnode, vnode) {
+    var options = vnode.componentOptions;
+    var child = vnode.componentInstance = oldVnode.componentInstance; // updateChildComponent(
+    //   child,
+    //   options.propsData, // updated props
+    //   options.listeners, // updated listeners
+    //   vnode, // new parent vnode
+    //   options.children // new children
+    // )
+  },
+  insert: function insert(vnode) {
+    var context = vnode.context,
+        componentInstance = vnode.componentInstance;
+
+    if (!componentInstance._isMounted) {
+      componentInstance._isMounted = true; // callHook(componentInstance, 'mounted')
+    } // activateChildComponent(componentInstance, true /* direct */)
+
+  },
+  destroy: function destroy(vnode) {
+    var componentInstance = vnode.componentInstance;
+
+    if (!componentInstance._isDestroyed) {// deactivateChildComponent(componentInstance, true /* direct */)
+    }
+  }
+};
+var hooksToMerge = Object.keys(componentVNodeHooks);
+function createComponent(Ctor, // Class<Component> | Function | Object | void
+data, // VNodeData
+context, // Component
+children, // Array<VNode>
+tag // string
+) {
+  if (!Ctor) {
+    return;
+  }
+
+  var baseCtor = context.$options._base; // plain options object: turn it into a constructor
+
+  if (_typeof(Ctor) === 'object') {
+    Ctor = baseCtor.extend(Ctor);
+  } // if at this stage it's not a constructor or an async component factory,
+  // reject.
+
+
+  if (typeof Ctor !== 'function') {
+    return;
+  }
+
+  data = data || {}; // resolve constructor options in case global mixins are applied after
+  // component constructor creation
+
+  Object(core_instance_init__WEBPACK_IMPORTED_MODULE_1__["resolveConstructorOptions"])(Ctor); // install component management hooks onto the placeholder node
+
+  installComponentHooks(data); // return a placeholder vnode
+
+  var name = Ctor.options.name || tag;
+  var vnode = new _vnode__WEBPACK_IMPORTED_MODULE_0__["default"]("vue-component-".concat(Ctor.cid).concat(name ? "-".concat(name) : ''), data, undefined, undefined, undefined, context, {
+    Ctor: Ctor,
+    tag: tag,
+    children: children
+  });
+  return vnode;
+}
+function createComponentInstanceForVnode(vnode, // MountedComponentVNode
+parent // activeInstance in lifecycle state
+) {
+  var options = {
+    _isComponent: true,
+    _parentVnode: vnode,
+    parent: parent
+  };
+  return new vnode.componentOptions.Ctor(options);
+}
+
+function installComponentHooks(data) {
+  var hooks = data.hook || (data.hook = {});
+
+  for (var i = 0; i < hooksToMerge.length; i++) {
+    var key = hooksToMerge[i];
+    var existing = hooks[key];
+    var toMerge = componentVNodeHooks[key];
+
+    if (existing !== toMerge && !(existing && existing._merged)) {
+      hooks[key] = existing ? mergeHook(toMerge, existing) : toMerge;
+    }
+  }
+}
+
+function mergeHook(f1, f2) {
+  var merged = function merged(a, b) {
+    // flow complains about extra args which is why we use any
+    f1(a, b);
+    f2(a, b);
+  };
+
+  merged._merged = true;
+  return merged;
 }
 
 /***/ }),
@@ -304,13 +754,15 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "simpleNormalizeChildren", function() { return simpleNormalizeChildren; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "normalizeChildren", function() { return normalizeChildren; });
 /* harmony import */ var core_vdom_vnode__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! core/vdom/vnode */ "./src/core/vdom/vnode.js");
-/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../util */ "./src/core/util/index.js");
+/* harmony import */ var _create_component__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./create-component */ "./src/core/vdom/create-component.js");
+/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../util */ "./src/core/util/index.js");
+
 
 
 var SIMPLE_NORMALIZE = 1;
 var ALWAYS_NORMALIZE = 2;
 function createElement(context, tag, data, children, normalizationType, alwaysNormalize) {
-  if (Array.isArray(data) || Object(_util__WEBPACK_IMPORTED_MODULE_1__["isPrimitive"])(data)) {
+  if (Array.isArray(data) || Object(_util__WEBPACK_IMPORTED_MODULE_2__["isPrimitive"])(data)) {
     normalizationType = children;
     children = data;
     data = undefined;
@@ -323,7 +775,10 @@ function createElement(context, tag, data, children, normalizationType, alwaysNo
   return _createElement(context, tag, data, children, normalizationType);
 }
 
-function _createElement(context, tag, data, children, normalizationType) {
+function _createElement(context, // Component
+tag, // string | Class<Component> | Function | Object
+data, // VNodeData
+children, normalizationType) {
   if (normalizationType === ALWAYS_NORMALIZE) {
     children = normalizeChildren(children);
   } else if (normalizationType === SIMPLE_NORMALIZE) {
@@ -333,7 +788,12 @@ function _createElement(context, tag, data, children, normalizationType) {
   var vnode;
 
   if (typeof tag === 'string') {
+    // dom原生保留标签
     vnode = new core_vdom_vnode__WEBPACK_IMPORTED_MODULE_0__["default"](tag, data, children, undefined, undefined, context);
+  } else {
+    // 组件
+    debugger;
+    vnode = Object(_create_component__WEBPACK_IMPORTED_MODULE_1__["createComponent"])(tag, data, context, children);
   }
 
   return vnode;
@@ -349,7 +809,7 @@ function simpleNormalizeChildren(children) {
   return children;
 }
 function normalizeChildren(children) {
-  return Object(_util__WEBPACK_IMPORTED_MODULE_1__["isPrimitive"])(children) ? [Object(core_vdom_vnode__WEBPACK_IMPORTED_MODULE_0__["createTextVNode"])(children)] : Array.isArray(children) ? normalizeArrayChildren(children) : undefined;
+  return Object(_util__WEBPACK_IMPORTED_MODULE_2__["isPrimitive"])(children) ? [Object(core_vdom_vnode__WEBPACK_IMPORTED_MODULE_0__["createTextVNode"])(children)] : Array.isArray(children) ? normalizeArrayChildren(children) : undefined;
 }
 
 function normalizeArrayChildren(children) {
@@ -359,7 +819,7 @@ function normalizeArrayChildren(children) {
   for (i = 0; i < children.length; i++) {
     c = children[i];
     if (!c || typeof c === 'boolean') continue;
-    res.push(c);
+    res.push(Object(core_vdom_vnode__WEBPACK_IMPORTED_MODULE_0__["createTextVNode"])(c));
   }
 
   return res;
@@ -388,13 +848,20 @@ function createPatchFunction() {
 
 
   function createElm(vnode, insertedVnodeQueue, parentElm, refElm) {
+    var data = vnode.data;
     var children = vnode.children;
     var tag = vnode.tag;
 
     if (tag) {
       vnode.elm = web_runtime_node_ops__WEBPACK_IMPORTED_MODULE_0__["createElement"](tag, vnode); // createChildren
 
-      createChildren(vnode, children, insertedVnodeQueue);
+      createChildren(vnode, children, insertedVnodeQueue); // 处理 html属性
+
+      if (data) {
+        // invokeCreateHooks(vnode, insertedVnodeQueue)
+        console.log(data);
+      }
+
       insert(parentElm, vnode.elm, refElm);
     } else {
       vnode.elm = web_runtime_node_ops__WEBPACK_IMPORTED_MODULE_0__["createTextNode"](vnode.text);
@@ -592,6 +1059,66 @@ web_runtime__WEBPACK_IMPORTED_MODULE_0__["default"].prototype.$mount = function 
 
 /***/ }),
 
+/***/ "./src/shared/constants.js":
+/*!*********************************!*\
+  !*** ./src/shared/constants.js ***!
+  \*********************************/
+/*! exports provided: SSR_ATTR, ASSET_TYPES, LIFECYCLE_HOOKS */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "SSR_ATTR", function() { return SSR_ATTR; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ASSET_TYPES", function() { return ASSET_TYPES; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "LIFECYCLE_HOOKS", function() { return LIFECYCLE_HOOKS; });
+var SSR_ATTR = 'data-server-rendered';
+var ASSET_TYPES = ['component', 'directive', 'filter'];
+var LIFECYCLE_HOOKS = ['beforeCreate', 'created', 'beforeMount', 'mounted', 'beforeUpdate', 'updated', 'beforeDestroy', 'destroyed', 'activated', 'deactivated', 'errorCaptured', 'serverPrefetch'];
+
+/***/ }),
+
+/***/ "./src/shared/util.js":
+/*!****************************!*\
+  !*** ./src/shared/util.js ***!
+  \****************************/
+/*! exports provided: isPrimitive, hasOwn, extend */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isPrimitive", function() { return isPrimitive; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "hasOwn", function() { return hasOwn; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "extend", function() { return extend; });
+function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+/**
+ * Check if value is primitive.
+ */
+function isPrimitive(value) {
+  return typeof value === 'string' || typeof value === 'number' || _typeof(value) === 'symbol' || typeof value === 'boolean';
+}
+/**
+ * Check whether an object has the property.
+ */
+
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+function hasOwn(obj, key) {
+  return hasOwnProperty.call(obj, key);
+}
+/**
+ * Mix properties into target object.
+ */
+
+function extend(to, _from) {
+  for (var key in _from) {
+    to[key] = _from[key];
+  }
+
+  return to;
+}
+
+/***/ }),
+
 /***/ "./src/web/runtime/index.js":
 /*!**********************************!*\
   !*** ./src/web/runtime/index.js ***!
@@ -601,7 +1128,7 @@ web_runtime__WEBPACK_IMPORTED_MODULE_0__["default"].prototype.$mount = function 
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var core_instance__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! core/instance */ "./src/core/instance/index.js");
+/* harmony import */ var core_index__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! core/index */ "./src/core/index.js");
 /* harmony import */ var core_instance_lifecycle__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! core/instance/lifecycle */ "./src/core/instance/lifecycle.js");
 /* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../util */ "./src/web/util/index.js");
 /* harmony import */ var _patch__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./patch */ "./src/web/runtime/patch.js");
@@ -610,14 +1137,14 @@ __webpack_require__.r(__webpack_exports__);
 
  // SVue.prototype.$mount
 
-core_instance__WEBPACK_IMPORTED_MODULE_0__["default"].prototype.$mount = function (el) {
+core_index__WEBPACK_IMPORTED_MODULE_0__["default"].prototype.$mount = function (el) {
   el = el ? Object(_util__WEBPACK_IMPORTED_MODULE_2__["query"])(el) : undefined;
   return Object(core_instance_lifecycle__WEBPACK_IMPORTED_MODULE_1__["mountComponent"])(this, el);
 }; // SVue.prototype.__patch__
 
 
-core_instance__WEBPACK_IMPORTED_MODULE_0__["default"].prototype.__patch__ = _patch__WEBPACK_IMPORTED_MODULE_3__["patch"];
-/* harmony default export */ __webpack_exports__["default"] = (core_instance__WEBPACK_IMPORTED_MODULE_0__["default"]);
+core_index__WEBPACK_IMPORTED_MODULE_0__["default"].prototype.__patch__ = _patch__WEBPACK_IMPORTED_MODULE_3__["patch"];
+/* harmony default export */ __webpack_exports__["default"] = (core_index__WEBPACK_IMPORTED_MODULE_0__["default"]);
 
 /***/ }),
 

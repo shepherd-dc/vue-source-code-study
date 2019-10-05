@@ -17,7 +17,8 @@ module.exports = {
     alias: {
       src: path.resolve(__dirname, 'src'),
       core: path.resolve(__dirname, 'src/core'),
-      web: path.resolve(__dirname, 'src/web')
+      web: path.resolve(__dirname, 'src/web'),
+      shared: path.resolve(__dirname, 'src/shared')
     }
   },
   module: {

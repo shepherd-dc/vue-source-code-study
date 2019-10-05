@@ -1,4 +1,4 @@
-import SVue from 'core/instance'
+import SVue from 'core/index'
 import { mountComponent } from 'core/instance/lifecycle'
 import { query } from '../util'
 import { patch } from './patch'
