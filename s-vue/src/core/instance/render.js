@@ -7,6 +7,7 @@ export function renderMixin (SVue) {
     const vm = this
     const { render, _parentVnode } = vm.$options
 
+    // vm.$vnode: 占位vnode(父) <--> vm._vnode: 渲染vnode(子)
     vm.$vnode = _parentVnode
 
     let vnode

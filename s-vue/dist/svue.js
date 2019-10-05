@@ -241,7 +241,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "resolveConstructorOptions", function() { return resolveConstructorOptions; });
 /* harmony import */ var _state__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./state */ "./src/core/instance/state.js");
 /* harmony import */ var _render__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./render */ "./src/core/instance/render.js");
-/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../util */ "./src/core/util/index.js");
+/* harmony import */ var _lifecycle__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./lifecycle */ "./src/core/instance/lifecycle.js");
+/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../util */ "./src/core/util/index.js");
+
 
 
 
@@ -260,13 +262,15 @@ function initMixin(SVue) {
       // internal component options needs special treatment.
       initInternalComponent(vm, options);
     } else {
-      vm.$options = Object(_util__WEBPACK_IMPORTED_MODULE_2__["mergeOptions"])(resolveConstructorOptions(vm.constructor), options || {}, vm);
+      vm.$options = Object(_util__WEBPACK_IMPORTED_MODULE_3__["mergeOptions"])(resolveConstructorOptions(vm.constructor), options || {}, vm);
     } // 初始化状态：data
 
 
     Object(_state__WEBPACK_IMPORTED_MODULE_0__["initState"])(vm); // 初始化render --> vm.$createElement
 
-    Object(_render__WEBPACK_IMPORTED_MODULE_1__["initRender"])(vm); //模拟钩子函数
+    Object(_render__WEBPACK_IMPORTED_MODULE_1__["initRender"])(vm); // 初始化生命周期
+
+    Object(_lifecycle__WEBPACK_IMPORTED_MODULE_2__["initLifecycle"])(vm); //模拟钩子函数
 
     var created = options.created;
 
@@ -311,10 +315,10 @@ function resolveConstructorOptions(Ctor) {
       var modifiedOptions = resolveModifiedOptions(Ctor); // update base extend options
 
       if (modifiedOptions) {
-        Object(_util__WEBPACK_IMPORTED_MODULE_2__["extend"])(Ctor.extendOptions, modifiedOptions);
+        Object(_util__WEBPACK_IMPORTED_MODULE_3__["extend"])(Ctor.extendOptions, modifiedOptions);
       }
 
-      options = Ctor.options = Object(_util__WEBPACK_IMPORTED_MODULE_2__["mergeOptions"])(superOptions, Ctor.extendOptions);
+      options = Ctor.options = Object(_util__WEBPACK_IMPORTED_MODULE_3__["mergeOptions"])(superOptions, Ctor.extendOptions);
 
       if (options.name) {
         options.components[options.name] = Ctor;
@@ -346,20 +350,57 @@ function resolveModifiedOptions(Ctor) {
 /*!****************************************!*\
   !*** ./src/core/instance/lifecycle.js ***!
   \****************************************/
-/*! exports provided: lifecycleMixin, mountComponent */
+/*! exports provided: activeInstance, initLifecycle, lifecycleMixin, mountComponent */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "activeInstance", function() { return activeInstance; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "initLifecycle", function() { return initLifecycle; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "lifecycleMixin", function() { return lifecycleMixin; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "mountComponent", function() { return mountComponent; });
-// SVue.prototype._update
+// 全局当前激活实例
+var activeInstance = null; // export function setActiveInstance(vm) {
+//   const prevActiveInstance = activeInstance
+//   activeInstance = vm
+//   return () => {
+//     activeInstance = prevActiveInstance
+//   }
+// }
+// initLifecycle
+
+function initLifecycle(vm) {
+  var options = vm.$options; // locate first non-abstract parent
+  // 建立记录父子关系
+
+  var parent = options.parent;
+
+  if (parent && !options["abstract"]) {
+    while (parent.$options["abstract"] && parent.$parent) {
+      parent = parent.$parent;
+    }
+
+    parent.$children.push(vm);
+  }
+
+  vm.$parent = parent;
+  vm.$root = parent ? parent.$root : vm;
+  vm.$children = [];
+} // SVue.prototype._update
+
 function lifecycleMixin(SVue) {
   SVue.prototype._update = function (vnode) {
-    var vm = this;
+    var vm = this; // 记录当前激活实例
+    // const restoreActiveInstance = setActiveInstance(vm)
+
+    var prevActiveInstance = activeInstance;
+    activeInstance = vm; // vm._vnode: 渲染vnode(子) <--> vm.$vnode: 占位vnode(父)
+
     vm._vnode = vnode; // initial render
 
-    vm.$el = vm.__patch__(vm.$el, vnode);
+    vm.$el = vm.__patch__(vm.$el, vnode); // restoreActiveInstance()
+
+    activeInstance = prevActiveInstance;
   };
 }
 function mountComponent(vm, el) {
@@ -396,7 +437,8 @@ function renderMixin(SVue) {
     var vm = this;
     var _vm$$options = vm.$options,
         render = _vm$$options.render,
-        _parentVnode = _vm$$options._parentVnode;
+        _parentVnode = _vm$$options._parentVnode; // vm.$vnode: 占位vnode(父) <--> vm._vnode: 渲染vnode(子)
+
     vm.$vnode = _parentVnode;
     var vnode;
     vnode = render.call(vm, vm.$createElement); // return empty vnode in case the render function errored out
@@ -630,14 +672,18 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "createComponentInstanceForVnode", function() { return createComponentInstanceForVnode; });
 /* harmony import */ var _vnode__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./vnode */ "./src/core/vdom/vnode.js");
 /* harmony import */ var core_instance_init__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! core/instance/init */ "./src/core/instance/init.js");
+/* harmony import */ var _instance_lifecycle__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../instance/lifecycle */ "./src/core/instance/lifecycle.js");
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
 
 
  // inline hooks to be invoked on component VNodes during patch
 
 var componentVNodeHooks = {
   init: function init(vnode) {
-    var child = vnode.componentInstance = createComponentInstanceForVnode(vnode, null);
+    var child = vnode.componentInstance = createComponentInstanceForVnode(vnode, // MountedComponentVNode
+    _instance_lifecycle__WEBPACK_IMPORTED_MODULE_2__["activeInstance"] // activeInstance in lifecycle state 当前激活实例 parent
+    );
     child.$mount(undefined);
   },
   prepatch: function prepatch(oldVnode, vnode) {

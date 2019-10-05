@@ -1,5 +1,6 @@
 import { initState } from './state'
 import { initRender } from './render'
+import { initLifecycle } from './lifecycle'
 
 import { mergeOptions, extend } from '../util'
 
@@ -31,8 +32,9 @@ export function initMixin (SVue) {
     initState(vm)
     // 初始化render --> vm.$createElement
     initRender(vm)
+    // 初始化生命周期
+    initLifecycle(vm)
     
-
     //模拟钩子函数
     const created = options.created
     if (created && typeof created === 'function') {

@@ -1,10 +1,14 @@
 import VNode from './vnode'
 import { resolveConstructorOptions } from 'core/instance/init'
+import { activeInstance } from '../instance/lifecycle'
 
 // inline hooks to be invoked on component VNodes during patch
 const componentVNodeHooks = {
   init (vnode) {
-    const child = vnode.componentInstance = createComponentInstanceForVnode(vnode, null)
+    const child = vnode.componentInstance = createComponentInstanceForVnode(
+      vnode, // MountedComponentVNode
+      activeInstance // activeInstance in lifecycle state 当前激活实例 parent
+    )
     child.$mount(undefined)
   },
 
