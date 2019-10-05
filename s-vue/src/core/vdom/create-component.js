@@ -4,10 +4,7 @@ import { resolveConstructorOptions } from 'core/instance/init'
 // inline hooks to be invoked on component VNodes during patch
 const componentVNodeHooks = {
   init (vnode) {
-    const child = vnode.componentInstance = createComponentInstanceForVnode(
-      vnode,
-      activeInstance
-    )
+    const child = vnode.componentInstance = createComponentInstanceForVnode(vnode, null)
     child.$mount(undefined)
   },
 

@@ -356,7 +356,8 @@ __webpack_require__.r(__webpack_exports__);
 // SVue.prototype._update
 function lifecycleMixin(SVue) {
   SVue.prototype._update = function (vnode) {
-    var vm = this; // initial render
+    var vm = this;
+    vm._vnode = vnode; // initial render
 
     vm.$el = vm.__patch__(vm.$el, vnode);
   };
@@ -636,7 +637,7 @@ function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterat
 
 var componentVNodeHooks = {
   init: function init(vnode) {
-    var child = vnode.componentInstance = createComponentInstanceForVnode(vnode, activeInstance);
+    var child = vnode.componentInstance = createComponentInstanceForVnode(vnode, null);
     child.$mount(undefined);
   },
   prepatch: function prepatch(oldVnode, vnode) {
@@ -848,6 +849,12 @@ function createPatchFunction() {
 
 
   function createElm(vnode, insertedVnodeQueue, parentElm, refElm) {
+    // 如果是组件，创建组件节点，成功则直接返回
+    if (createComponent(vnode, insertedVnodeQueue, parentElm, refElm)) {
+      return;
+    } // 非组件节点继续处理
+
+
     var data = vnode.data;
     var children = vnode.children;
     var tag = vnode.tag;
@@ -867,6 +874,39 @@ function createPatchFunction() {
       vnode.elm = web_runtime_node_ops__WEBPACK_IMPORTED_MODULE_0__["createTextNode"](vnode.text);
       insert(parentElm, vnode.elm, refElm);
     }
+  } // createComponent
+
+
+  function createComponent(vnode, insertedVnodeQueue, parentElm, refElm) {
+    var i = vnode.data;
+
+    if (i) {
+      var isReactivated = vnode.componentInstance && i.keepAlive;
+
+      if ((i = i.hook) && (i = i.init)) {
+        i(vnode);
+      } // after calling the init hook, if the vnode is a child component
+      // it should've created a child instance and mounted it. the child
+      // component also has set the placeholder vnode's elm.
+      // in that case we can just return the element and be done.
+
+
+      if (vnode.componentInstance) {
+        initComponent(vnode, insertedVnodeQueue);
+        insert(parentElm, vnode.elm, refElm);
+        return true;
+      }
+    }
+  } // initComponent
+
+
+  function initComponent(vnode, insertedVnodeQueue) {
+    if (vnode.data.pendingInsert) {
+      insertedVnodeQueue.push.apply(insertedVnodeQueue, vnode.data.pendingInsert);
+      vnode.data.pendingInsert = null;
+    }
+
+    vnode.elm = vnode.componentInstance.$el;
   } // insert
 
 
@@ -914,22 +954,32 @@ function createPatchFunction() {
       return;
     }
 
+    var isInitialPatch = false;
     var insertedVnodeQueue = [];
-    var isRealElement = oldVnode.nodeType;
 
-    if (isRealElement) {
-      // create an empty node and replace it
-      oldVnode = emptyNodeAt(oldVnode);
-    } // replacing existing element
+    if (!oldVnode) {
+      // empty mount (likely as component), create new root element
+      // 组件没有旧的dom节点，直接生成一个新的vnode
+      isInitialPatch = true;
+      createElm(vnode, insertedVnodeQueue);
+    } else {
+      // 将旧节点的dom元素转化成vnode
+      var isRealElement = oldVnode.nodeType;
+
+      if (isRealElement) {
+        // create an empty node and replace it
+        oldVnode = emptyNodeAt(oldVnode);
+      } // replacing existing element
 
 
-    var oldElm = oldVnode.elm;
-    var parentElm = web_runtime_node_ops__WEBPACK_IMPORTED_MODULE_0__["parentNode"](oldElm); // create new node
+      var oldElm = oldVnode.elm;
+      var parentElm = web_runtime_node_ops__WEBPACK_IMPORTED_MODULE_0__["parentNode"](oldElm); // create new node
 
-    createElm(vnode, insertedVnodeQueue, parentElm, web_runtime_node_ops__WEBPACK_IMPORTED_MODULE_0__["nextSibling"](oldElm)); // destroy old node
+      createElm(vnode, insertedVnodeQueue, parentElm, web_runtime_node_ops__WEBPACK_IMPORTED_MODULE_0__["nextSibling"](oldElm)); // destroy old node
 
-    if (parentElm) {
-      removeVnodes([oldVnode], 0, 0);
+      if (parentElm) {
+        removeVnodes([oldVnode], 0, 0);
+      }
     }
 
     return vnode.elm;

@@ -14,6 +14,12 @@ export function createPatchFunction () {
     parentElm,
     refElm
   ) {
+    // 如果是组件，创建组件节点，成功则直接返回
+    if (createComponent(vnode, insertedVnodeQueue, parentElm, refElm)) {
+      return
+    }
+
+    // 非组件节点继续处理
     const data = vnode.data
     const children = vnode.children
     const tag = vnode.tag
@@ -31,6 +37,35 @@ export function createPatchFunction () {
       vnode.elm = nodeOps.createTextNode(vnode.text)
       insert(parentElm, vnode.elm, refElm)
     }
+  }
+
+  // createComponent
+  function createComponent (vnode, insertedVnodeQueue, parentElm, refElm) {
+    let i = vnode.data
+    if (i) {
+      const isReactivated = vnode.componentInstance && i.keepAlive
+      if ((i = i.hook) && (i = i.init)) {
+        i(vnode)
+      }
+      // after calling the init hook, if the vnode is a child component
+      // it should've created a child instance and mounted it. the child
+      // component also has set the placeholder vnode's elm.
+      // in that case we can just return the element and be done.
+      if (vnode.componentInstance) {
+        initComponent(vnode, insertedVnodeQueue)
+        insert(parentElm, vnode.elm, refElm)
+        return true
+      }
+    }
+  }
+
+  // initComponent
+  function initComponent (vnode, insertedVnodeQueue) {
+    if (vnode.data.pendingInsert) {
+      insertedVnodeQueue.push.apply(insertedVnodeQueue, vnode.data.pendingInsert)
+      vnode.data.pendingInsert = null
+    }
+    vnode.elm = vnode.componentInstance.$el
   }
 
   // insert
@@ -77,28 +112,38 @@ export function createPatchFunction () {
       return
     }
 
+    let isInitialPatch = false
     const insertedVnodeQueue = []
-    const isRealElement = oldVnode.nodeType
-    if (isRealElement) {
-      // create an empty node and replace it
-      oldVnode = emptyNodeAt(oldVnode)
-    }
 
-    // replacing existing element
-    const oldElm = oldVnode.elm
-    const parentElm = nodeOps.parentNode(oldElm)
+    if (!oldVnode) {
+      // empty mount (likely as component), create new root element
+      // 组件没有旧的dom节点，直接生成一个新的vnode
+      isInitialPatch = true
+      createElm(vnode, insertedVnodeQueue)
+    } else {
+      // 将旧节点的dom元素转化成vnode
+      const isRealElement = oldVnode.nodeType
+      if (isRealElement) {
+        // create an empty node and replace it
+        oldVnode = emptyNodeAt(oldVnode)
+      }
 
-    // create new node
-    createElm(
-      vnode,
-      insertedVnodeQueue,
-      parentElm,
-      nodeOps.nextSibling(oldElm)
-    )
+      // replacing existing element
+      const oldElm = oldVnode.elm
+      const parentElm = nodeOps.parentNode(oldElm)
 
-    // destroy old node
-    if (parentElm) {
-      removeVnodes([oldVnode], 0, 0)
+      // create new node
+      createElm(
+        vnode,
+        insertedVnodeQueue,
+        parentElm,
+        nodeOps.nextSibling(oldElm)
+      )
+
+      // destroy old node
+      if (parentElm) {
+        removeVnodes([oldVnode], 0, 0)
+      }
     }
 
     return vnode.elm

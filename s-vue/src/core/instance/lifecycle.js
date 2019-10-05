@@ -2,6 +2,8 @@
 export function lifecycleMixin (SVue) {
   SVue.prototype._update = function (vnode) {
     const vm = this
+    vm._vnode = vnode
+
     // initial render
     vm.$el = vm.__patch__(vm.$el, vnode)
   }
