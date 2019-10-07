@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <title>Vue Study</title>
+</head>
+
+<body>
+  <script src="../dist/vue.js"></script>
+
+  <div id="app">
+    <!-- <template id="app1">
+      <div id="app">
+        <h1>{{ msg }}</h1>
+        <todos></todos>
+      </div>
+    </template> -->
+
+    <!-- <template id="hello">
+      <div>
+        <h1>{{ ques }}</h1>
+        <div>
+          <input type="text" v-model="val" />
+          <button @click="addTodo">添加</button>
+        </div>
+        <ul>
+          <li v-for="todo in todos">{{ todo }}</li>
+        </ul>
+      </div>
+    </template> -->
+  </div>
+
+  <script>
+    let Todos = {
+      name: 'todos',
+      data() {
+        return {
+          val: '',
+          todos: ['吃饭', '睡觉', '打豆豆'],
+          ques: '豆豆是谁？'
+        }
+      },
+      // template: '#hello',
+      render (h) {
+        return h('div', { class: { hello: true } }, [
+          h('h2', this.ques),
+          h('div', [
+            h('input', {attrs: {type:'text', placeholder:'请输入'}}),
+            h('button', {}, '添加')
+          ])
+        ])
+      },
+      methods: {
+        addTodo() {
+          if (this.val) {
+            this.todos.push(this.val)
+            this.val = ''
+          }
+        }
+      }
+    }
+
+    let App = {
+      name: 'app',
+      // components: {
+      //   Todos
+      // },
+      // template: '#app1',
+      render (h) {
+        return h('div', {
+          attrs: { id: 'app'}
+        }, [
+          h('h1',this.msg),
+          h(Todos),
+          // h('Todos')
+        ])
+      },
+      data () {
+        return {
+          msg: 'Hello Vue'
+        }
+      }
+    }
+
+    new Vue({
+      el: '#app',
+      render(h) {
+        //  return h('div', { attrs: { id: 'app'} }, 'msg')
+        // return h({template: '#hello'})
+        // return h(Todos)
+        // return h('todos')
+        return h(App)
+      }
+    })
+
+  </script>
+</body>
+
+</html>
