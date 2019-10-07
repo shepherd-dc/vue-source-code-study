@@ -826,6 +826,7 @@ function _createElement(context, // Component
 tag, // string | Class<Component> | Function | Object
 data, // VNodeData
 children, normalizationType) {
+  // normalizeChildren 将多维数组拍平成一维数组
   if (normalizationType === ALWAYS_NORMALIZE) {
     children = normalizeChildren(children);
   } else if (normalizationType === SIMPLE_NORMALIZE) {
@@ -865,8 +866,18 @@ function normalizeArrayChildren(children) {
 
   for (i = 0; i < children.length; i++) {
     c = children[i];
-    if (!c || typeof c === 'boolean') continue;
-    res.push(Object(core_vdom_vnode__WEBPACK_IMPORTED_MODULE_0__["createTextVNode"])(c));
+    if (!c || typeof c === 'boolean') continue; //  nested
+
+    if (Array.isArray(c)) {
+      if (c.length > 0) {
+        c = normalizeArrayChildren(c);
+        res.push.apply(res, c);
+      }
+    } else if (Object(_util__WEBPACK_IMPORTED_MODULE_2__["isPrimitive"])(c)) {
+      res.push(Object(core_vdom_vnode__WEBPACK_IMPORTED_MODULE_0__["createTextVNode"])(c));
+    } else {
+      res.push(c);
+    }
   }
 
   return res;
@@ -891,14 +902,14 @@ __webpack_require__.r(__webpack_exports__);
 function createPatchFunction() {
   function emptyNodeAt(elm) {
     return new _vnode__WEBPACK_IMPORTED_MODULE_1__["default"](web_runtime_node_ops__WEBPACK_IMPORTED_MODULE_0__["tagName"](elm).toLowerCase(), {}, [], undefined, elm);
-  } // createElm
+  } // create new node 创建一个新的节点
 
 
   function createElm(vnode, insertedVnodeQueue, parentElm, refElm) {
-    // 如果是组件，创建组件节点，成功则直接返回
+    // 如果是组件，创建组件占位符节点，成功则直接返回
     if (createComponent(vnode, insertedVnodeQueue, parentElm, refElm)) {
       return;
-    } // 非组件节点继续处理
+    } // 组件节点处理完了后，接着处理普通元素节点
 
 
     var data = vnode.data;
@@ -1005,11 +1016,11 @@ function createPatchFunction() {
 
     if (!oldVnode) {
       // empty mount (likely as component), create new root element
-      // 组件没有旧的dom节点，直接生成一个新的vnode
+      // 组件实例没有oldVnode(vm.$el)dom元素, 直接创建一个新的vnode
       isInitialPatch = true;
       createElm(vnode, insertedVnodeQueue);
     } else {
-      // 将旧节点的dom元素转化成vnode
+      // 如果有oldVnode(vm.$el), 将dom元素转化成虚拟dom——vnode, dom属性保存在oldVnode.elm上
       var isRealElement = oldVnode.nodeType;
 
       if (isRealElement) {

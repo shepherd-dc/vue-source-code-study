@@ -12,6 +12,17 @@
   <script src="../dist/svue.js"></script>
   <div id="app"></div>
   <script>
+    let Child = {
+      data () {
+        return {
+          greet: 'Child component'
+        }
+      },
+      render (h) {
+        return h('span', this.greet)
+      }
+    }
+
     let Hello = {
       data () {
         return {
@@ -19,7 +30,10 @@
         }
       },
       render (h) {
-        return h('h3', this.hi)
+        return h('div', [
+          h('h3', this.hi),
+          h(Child)
+        ])
       }
     }
     const svue = new SVue.default({

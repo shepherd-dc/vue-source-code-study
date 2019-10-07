@@ -31,11 +31,13 @@ function _createElement (
   children,
   normalizationType
 ) {
+  // normalizeChildren 将多维数组拍平成一维数组
   if (normalizationType === ALWAYS_NORMALIZE) {
     children = normalizeChildren(children)
   } else if (normalizationType === SIMPLE_NORMALIZE) {
     children = simpleNormalizeChildren(children)
   }
+
   let vnode
   if (typeof tag === 'string') {
     // dom原生保留标签
@@ -71,7 +73,17 @@ function normalizeArrayChildren (children) {
   for (i = 0; i < children.length; i++) {
     c = children[i]
     if (!c || typeof c === 'boolean') continue
-    res.push(createTextVNode(c))
+    //  nested
+    if (Array.isArray(c)) {
+      if (c.length > 0) {
+        c = normalizeArrayChildren(c)
+        res.push.apply(res, c)
+      }
+    } else if (isPrimitive(c)) {
+      res.push(createTextVNode(c))
+    } else {
+      res.push(c)
+    }
   }
   return res
 }
