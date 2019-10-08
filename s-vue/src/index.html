@@ -18,6 +18,9 @@
           greet: 'Child component'
         }
       },
+      mounted() {
+        console.log('Child component mounted')
+      },
       render (h) {
         return h('span', this.greet)
       }
@@ -29,6 +32,9 @@
           hi: 'Hi~嗨皮~'
         }
       },
+      mounted() {
+        console.log('Hello component mounted')
+      },
       render (h) {
         return h('div', [
           h('h3', this.hi),
@@ -38,17 +44,17 @@
     }
     const svue = new SVue.default({
       el: '#app',
-      // data() {
-      //   return {
-      //     msg: 'Hello world!',
-      //     foo: {
-      //       bar: 'bar'
-      //     }
-      //   }
-      // },
-      // created() {
-      //   console.log('created', this.foo.bar)
-      // },
+      data() {
+        return {
+          msg: 'Hello world!',
+          foo: {
+            bar: 'bar'
+          }
+        }
+      },
+      created() {
+        console.log('SVue instance created', this.foo.bar)
+      },
       render(h) {
         // 渲染dom保留标签
         /* return h('div', {

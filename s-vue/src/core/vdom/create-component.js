@@ -1,6 +1,6 @@
 import VNode from './vnode'
 import { resolveConstructorOptions } from 'core/instance/init'
-import { activeInstance } from '../instance/lifecycle'
+import { activeInstance, callHook } from '../instance/lifecycle'
 
 // inline hooks to be invoked on component VNodes during patch
 const componentVNodeHooks = {
@@ -25,12 +25,11 @@ const componentVNodeHooks = {
   },
 
   insert (vnode) {
-    const { context, componentInstance } = vnode
+    const { componentInstance } = vnode
     if (!componentInstance._isMounted) {
       componentInstance._isMounted = true
-      // callHook(componentInstance, 'mounted')
+      callHook(componentInstance, 'mounted')
     }
-    // activateChildComponent(componentInstance, true /* direct */)
   },
 
   destroy (vnode) {

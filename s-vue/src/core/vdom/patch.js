@@ -3,6 +3,7 @@ import VNode from './vnode'
 
 export function createPatchFunction () {
   
+  // 在dom的基础上新建一个空的vnode, dom属性保存在elm上
   function emptyNodeAt (elm) {
     return new VNode(nodeOps.tagName(elm).toLowerCase(), {}, [], undefined, elm)
   }
@@ -43,8 +44,8 @@ export function createPatchFunction () {
   function createComponent (vnode, insertedVnodeQueue, parentElm, refElm) {
     let i = vnode.data
     if (i) {
-      const isReactivated = vnode.componentInstance && i.keepAlive
       if ((i = i.hook) && (i = i.init)) {
+        // 调用init hook
         i(vnode)
       }
       // after calling the init hook, if the vnode is a child component
@@ -66,6 +67,8 @@ export function createPatchFunction () {
       vnode.data.pendingInsert = null
     }
     vnode.elm = vnode.componentInstance.$el
+    // make sure to invoke the insert hook
+    insertedVnodeQueue.push(vnode)
   }
 
   // insert
@@ -107,6 +110,18 @@ export function createPatchFunction () {
     }
   }
 
+  function invokeInsertHook (vnode, queue, initial) {
+    // delay insert hooks for component root nodes, invoke them after the element is really inserted
+    // 组件patch时 isInitialPatch = true
+    if (initial && vnode.parent) {
+      vnode.parent.data.pendingInsert = queue
+    } else {
+      for (let i = 0; i < queue.length; ++i) {
+        queue[i].data.hook.insert(queue[i])
+      }
+    }
+  }
+
   return function patch (oldVnode, vnode) {
     if (!vnode) {
       return
@@ -117,8 +132,9 @@ export function createPatchFunction () {
 
     if (!oldVnode) {
       // empty mount (likely as component), create new root element
-      // 组件实例没有oldVnode(vm.$el)dom元素, 直接创建一个新的vnode
+      // 组件patch时 isInitialPatch = true
       isInitialPatch = true
+      // 组件实例没有oldVnode(vm.$el)dom元素, 直接创建一个新的vnode
       createElm(vnode, insertedVnodeQueue)
     } else {
       // 如果有oldVnode(vm.$el), 将dom元素转化成虚拟dom——vnode, dom属性保存在oldVnode.elm上
@@ -145,6 +161,8 @@ export function createPatchFunction () {
         removeVnodes([oldVnode], 0, 0)
       }
     }
+
+    invokeInsertHook(vnode, insertedVnodeQueue, isInitialPatch)
 
     return vnode.elm
   }

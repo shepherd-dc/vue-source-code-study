@@ -51,10 +51,37 @@ export function lifecycleMixin (SVue) {
 export function mountComponent (vm, el) {
   vm.$el = el
 
+  callHook(vm, 'beforeMount')
+
   let updateComponent = () => {
     vm._update(vm._render())
   }
 
   // 模拟Watcher中getter的调用
   updateComponent.call(vm, vm)
+  if (vm._isMounted) {
+    callHook(vm, 'beforeUpdate')
+  }
+
+  // manually mounted instance, call mounted on self
+  // mounted is called for render-created child components in its inserted hook
+  if (vm.$vnode == null) {
+    vm._isMounted = true
+    callHook(vm, 'mounted')
+  }
+  return vm
+}
+
+export function callHook (vm, hook) {
+  const handlers = vm.$options[hook]
+  const info = `${hook} hook`
+  if (handlers) {
+    for (let i = 0, j = handlers.length; i < j; i++) {
+      try {
+        handlers[i].call(vm)
+      } catch (e) {
+        console.error(e, info)
+      }
+    }
+  }
 }

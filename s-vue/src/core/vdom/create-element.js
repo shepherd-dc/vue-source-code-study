@@ -44,7 +44,6 @@ function _createElement (
     vnode = new VNode(tag, data, children, undefined, undefined, context)
   } else {
     // 组件
-    debugger
     vnode = createComponent(tag, data, context, children)
   }
   return vnode

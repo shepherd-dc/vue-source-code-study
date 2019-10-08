@@ -263,20 +263,17 @@ function initMixin(SVue) {
       initInternalComponent(vm, options);
     } else {
       vm.$options = Object(_util__WEBPACK_IMPORTED_MODULE_3__["mergeOptions"])(resolveConstructorOptions(vm.constructor), options || {}, vm);
-    } // 初始化状态：data
+    } // 一系列初始化
 
 
-    Object(_state__WEBPACK_IMPORTED_MODULE_0__["initState"])(vm); // 初始化render --> vm.$createElement
+    Object(_lifecycle__WEBPACK_IMPORTED_MODULE_2__["initLifecycle"])(vm); // 初始化生命周期
 
-    Object(_render__WEBPACK_IMPORTED_MODULE_1__["initRender"])(vm); // 初始化生命周期
+    Object(_render__WEBPACK_IMPORTED_MODULE_1__["initRender"])(vm); // 初始化render --> vm.$createElement
 
-    Object(_lifecycle__WEBPACK_IMPORTED_MODULE_2__["initLifecycle"])(vm); //模拟钩子函数
+    Object(_lifecycle__WEBPACK_IMPORTED_MODULE_2__["callHook"])(vm, 'beforeCreate');
+    Object(_state__WEBPACK_IMPORTED_MODULE_0__["initState"])(vm); // 初始化状态：data    
 
-    var created = options.created;
-
-    if (created && typeof created === 'function') {
-      created.call(vm);
-    }
+    Object(_lifecycle__WEBPACK_IMPORTED_MODULE_2__["callHook"])(vm, 'created'); // new Vue()时如果传了el自动$mount
 
     if (vm.$options.el) {
       vm.$mount(vm.$options.el);
@@ -350,7 +347,7 @@ function resolveModifiedOptions(Ctor) {
 /*!****************************************!*\
   !*** ./src/core/instance/lifecycle.js ***!
   \****************************************/
-/*! exports provided: activeInstance, initLifecycle, lifecycleMixin, mountComponent */
+/*! exports provided: activeInstance, initLifecycle, lifecycleMixin, mountComponent, callHook */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -359,6 +356,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "initLifecycle", function() { return initLifecycle; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "lifecycleMixin", function() { return lifecycleMixin; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "mountComponent", function() { return mountComponent; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "callHook", function() { return callHook; });
 // 全局当前激活实例
 var activeInstance = null; // export function setActiveInstance(vm) {
 //   const prevActiveInstance = activeInstance
@@ -405,6 +403,7 @@ function lifecycleMixin(SVue) {
 }
 function mountComponent(vm, el) {
   vm.$el = el;
+  callHook(vm, 'beforeMount');
 
   var updateComponent = function updateComponent() {
     vm._update(vm._render());
@@ -412,6 +411,33 @@ function mountComponent(vm, el) {
 
 
   updateComponent.call(vm, vm);
+
+  if (vm._isMounted) {
+    callHook(vm, 'beforeUpdate');
+  } // manually mounted instance, call mounted on self
+  // mounted is called for render-created child components in its inserted hook
+
+
+  if (vm.$vnode == null) {
+    vm._isMounted = true;
+    callHook(vm, 'mounted');
+  }
+
+  return vm;
+}
+function callHook(vm, hook) {
+  var handlers = vm.$options[hook];
+  var info = "".concat(hook, " hook");
+
+  if (handlers) {
+    for (var i = 0, j = handlers.length; i < j; i++) {
+      try {
+        handlers[i].call(vm);
+      } catch (e) {
+        console.error(e, info);
+      }
+    }
+  }
 }
 
 /***/ }),
@@ -697,13 +723,12 @@ var componentVNodeHooks = {
     // )
   },
   insert: function insert(vnode) {
-    var context = vnode.context,
-        componentInstance = vnode.componentInstance;
+    var componentInstance = vnode.componentInstance;
 
     if (!componentInstance._isMounted) {
-      componentInstance._isMounted = true; // callHook(componentInstance, 'mounted')
-    } // activateChildComponent(componentInstance, true /* direct */)
-
+      componentInstance._isMounted = true;
+      Object(_instance_lifecycle__WEBPACK_IMPORTED_MODULE_2__["callHook"])(componentInstance, 'mounted');
+    }
   },
   destroy: function destroy(vnode) {
     var componentInstance = vnode.componentInstance;
@@ -840,7 +865,6 @@ children, normalizationType) {
     vnode = new core_vdom_vnode__WEBPACK_IMPORTED_MODULE_0__["default"](tag, data, children, undefined, undefined, context);
   } else {
     // 组件
-    debugger;
     vnode = Object(_create_component__WEBPACK_IMPORTED_MODULE_1__["createComponent"])(tag, data, context, children);
   }
 
@@ -900,6 +924,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 function createPatchFunction() {
+  // 在dom的基础上新建一个空的vnode, dom属性保存在elm上
   function emptyNodeAt(elm) {
     return new _vnode__WEBPACK_IMPORTED_MODULE_1__["default"](web_runtime_node_ops__WEBPACK_IMPORTED_MODULE_0__["tagName"](elm).toLowerCase(), {}, [], undefined, elm);
   } // create new node 创建一个新的节点
@@ -938,9 +963,8 @@ function createPatchFunction() {
     var i = vnode.data;
 
     if (i) {
-      var isReactivated = vnode.componentInstance && i.keepAlive;
-
       if ((i = i.hook) && (i = i.init)) {
+        // 调用init hook
         i(vnode);
       } // after calling the init hook, if the vnode is a child component
       // it should've created a child instance and mounted it. the child
@@ -963,7 +987,9 @@ function createPatchFunction() {
       vnode.data.pendingInsert = null;
     }
 
-    vnode.elm = vnode.componentInstance.$el;
+    vnode.elm = vnode.componentInstance.$el; // make sure to invoke the insert hook
+
+    insertedVnodeQueue.push(vnode);
   } // insert
 
 
@@ -1006,6 +1032,18 @@ function createPatchFunction() {
     }
   }
 
+  function invokeInsertHook(vnode, queue, initial) {
+    // delay insert hooks for component root nodes, invoke them after the element is really inserted
+    // 组件patch时 isInitialPatch = true
+    if (initial && vnode.parent) {
+      vnode.parent.data.pendingInsert = queue;
+    } else {
+      for (var i = 0; i < queue.length; ++i) {
+        queue[i].data.hook.insert(queue[i]);
+      }
+    }
+  }
+
   return function patch(oldVnode, vnode) {
     if (!vnode) {
       return;
@@ -1016,8 +1054,9 @@ function createPatchFunction() {
 
     if (!oldVnode) {
       // empty mount (likely as component), create new root element
-      // 组件实例没有oldVnode(vm.$el)dom元素, 直接创建一个新的vnode
-      isInitialPatch = true;
+      // 组件patch时 isInitialPatch = true
+      isInitialPatch = true; // 组件实例没有oldVnode(vm.$el)dom元素, 直接创建一个新的vnode
+
       createElm(vnode, insertedVnodeQueue);
     } else {
       // 如果有oldVnode(vm.$el), 将dom元素转化成虚拟dom——vnode, dom属性保存在oldVnode.elm上
@@ -1039,6 +1078,7 @@ function createPatchFunction() {
       }
     }
 
+    invokeInsertHook(vnode, insertedVnodeQueue, isInitialPatch);
     return vnode.elm;
   };
 }

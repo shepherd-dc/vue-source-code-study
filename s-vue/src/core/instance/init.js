@@ -1,6 +1,6 @@
 import { initState } from './state'
 import { initRender } from './render'
-import { initLifecycle } from './lifecycle'
+import { initLifecycle, callHook } from './lifecycle'
 
 import { mergeOptions, extend } from '../util'
 
@@ -28,19 +28,14 @@ export function initMixin (SVue) {
       )
     }
 
-    // 初始化状态：data
-    initState(vm)
-    // 初始化render --> vm.$createElement
-    initRender(vm)
-    // 初始化生命周期
-    initLifecycle(vm)
-    
-    //模拟钩子函数
-    const created = options.created
-    if (created && typeof created === 'function') {
-      created.call(vm)
-    }
+    // 一系列初始化
+    initLifecycle(vm) // 初始化生命周期
+    initRender(vm) // 初始化render --> vm.$createElement
+    callHook(vm, 'beforeCreate')
+    initState(vm) // 初始化状态：data    
+    callHook(vm, 'created')
 
+    // new Vue()时如果传了el自动$mount
     if (vm.$options.el) {
       vm.$mount(vm.$options.el)
     }
