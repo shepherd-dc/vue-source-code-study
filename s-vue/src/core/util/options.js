@@ -1,3 +1,5 @@
+import config from '../config'
+
 import {
   ASSET_TYPES,
   LIFECYCLE_HOOKS
@@ -5,7 +7,9 @@ import {
 
 import {
   extend,
-  hasOwn
+  hasOwn,
+  camelize,
+  capitalize
 } from 'shared/util'
 
 /**
@@ -13,7 +17,7 @@ import {
  * how to merge a parent option value and a child option
  * value into the final value.
  */
-const strats = Object.create(null)
+const strats = config.optionMergeStrategies
 
 /**
  * Hooks and props are merged as arrays.
@@ -63,7 +67,6 @@ function mergeAssets (
 ) {
   const res = Object.create(parentVal || null)
   if (childVal) {
-    process.env.NODE_ENV !== 'production' && assertObjectType(key, childVal, vm)
     return extend(res, childVal)
   } else {
     return res
@@ -126,4 +129,29 @@ export function mergeOptions (
     options[key] = strat(parent[key], child[key], vm, key)
   }
   return options
+}
+
+/**
+ * Resolve an asset.
+ * This function is used because child instances need access
+ * to assets defined in its ancestor chain.
+ */
+export function resolveAsset (
+  options, // Object,
+  type, // string,
+  id // string
+) {
+  const assets = options[type]
+  // check local registration variations first
+  // 局部注册的组件在当前实例可以找到
+  if (hasOwn(assets, id)) return assets[id]
+  const camelizedId = camelize(id)
+  if (hasOwn(assets, camelizedId)) return assets[camelizedId]
+  const PascalCaseId = capitalize(camelizedId)
+  if (hasOwn(assets, PascalCaseId)) return assets[PascalCaseId]
+  // fallback to prototype chain、
+  // 全局注册的组件在原型链上可以找到
+  const res = assets[id] || assets[camelizedId] || assets[PascalCaseId]
+
+  return res
 }

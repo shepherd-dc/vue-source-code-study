@@ -12,7 +12,9 @@
   <script src="../dist/svue.js"></script>
   <div id="app"></div>
   <script>
+    let Vue = SVue.default
     let Child = {
+      name: 'child',
       data () {
         return {
           greet: 'Child component'
@@ -27,6 +29,9 @@
     }
 
     let Hello = {
+      components: {
+        Child
+      },
       data () {
         return {
           hi: 'Hi~嗨皮~'
@@ -38,11 +43,12 @@
       render (h) {
         return h('div', [
           h('h3', this.hi),
-          h(Child)
+          h('Child')
         ])
       }
     }
-    const svue = new SVue.default({
+    Vue.component('hello', Hello)
+    const svue = new Vue({
       el: '#app',
       data() {
         return {
@@ -55,6 +61,9 @@
       created() {
         console.log('SVue instance created', this.foo.bar)
       },
+      mounted() {
+        console.log('SVue instance mounted')
+      },
       render(h) {
         // 渲染dom保留标签
         /* return h('div', {
@@ -62,7 +71,7 @@
         }, this.msg) */
 
         // 渲染组件
-        return h(Hello)
+        return h('hello')
       }
     })
     console.log(svue)

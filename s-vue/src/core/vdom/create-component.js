@@ -56,12 +56,13 @@ export function createComponent (
   const baseCtor = context.$options._base
 
   // plain options object: turn it into a constructor
+  // 组件对象在此时继承Vue
   if (typeof Ctor === 'object') {
     Ctor = baseCtor.extend(Ctor)
   }
 
-  // if at this stage it's not a constructor or an async component factory,
-  // reject.
+  // if at this stage it's not a constructor or an async component factory, reject.
+  // 全局注册的组件之前已经继承过Vue, 此时进来是个构造器, type为function, 不用再走继承逻辑
   if (typeof Ctor !== 'function') {
     return
   }
