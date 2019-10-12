@@ -53,7 +53,7 @@ export function mountComponent (vm, el) {
 
   callHook(vm, 'beforeMount')
 
-  let updateComponent = () => {
+  const updateComponent = () => {
     vm._update(vm._render())
   }
 

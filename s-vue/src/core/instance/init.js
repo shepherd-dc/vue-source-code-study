@@ -32,7 +32,7 @@ export function initMixin (SVue) {
     initLifecycle(vm) // 初始化生命周期
     initRender(vm) // 初始化render --> vm.$createElement
     callHook(vm, 'beforeCreate')
-    initState(vm) // 初始化状态：data    
+    initState(vm) // 初始化状态：data
     callHook(vm, 'created')
 
     // new Vue()时如果传了el自动$mount

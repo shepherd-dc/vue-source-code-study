@@ -46,8 +46,9 @@ function _createElement (
       // platform built-in elements
       // dom原生保留标签
       vnode = new VNode(tag, data, children, undefined, undefined, context)
-    } 
+    } // eslint-disable-line
     // 全局注册的组件在原型链上都可以resolve到, 局部注册的组件只有在当前实例才能resolve到
+    // eslint-disable-next-line
     else if (Ctor = resolveAsset(context.$options, 'components', tag)) {
       // 实例上注册的组件
       // 全局注册：new Vue()之前事先调用 Vue.component静态方法, 继承了Vue的构造器, 随后createComponent()时不用再继承

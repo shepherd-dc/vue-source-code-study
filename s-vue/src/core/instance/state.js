@@ -7,7 +7,7 @@ export function initState (vm) {
   }
 }
 
-function initData(vm) {
+function initData (vm) {
   let data = vm.$options.data
   data = vm._data = typeof data === 'function' ? getData(data, vm) : data || {}
 

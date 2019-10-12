@@ -295,7 +295,7 @@ function initExtend(SVue) {
     Sub.prototype.constructor = Sub;
     Sub.cid = cid++;
     Sub.options = Object(_util__WEBPACK_IMPORTED_MODULE_0__["mergeOptions"])(Super.options, extendOptions);
-    Sub['super'] = Super; // allow further extension/mixin/plugin usage
+    Sub["super"] = Super; // allow further extension/mixin/plugin usage
 
     Sub.extend = Super.extend; // enable recursive self-lookup
 
@@ -473,7 +473,7 @@ function initMixin(SVue) {
     Object(_render__WEBPACK_IMPORTED_MODULE_1__["initRender"])(vm); // 初始化render --> vm.$createElement
 
     Object(_lifecycle__WEBPACK_IMPORTED_MODULE_2__["callHook"])(vm, 'beforeCreate');
-    Object(_state__WEBPACK_IMPORTED_MODULE_0__["initState"])(vm); // 初始化状态：data    
+    Object(_state__WEBPACK_IMPORTED_MODULE_0__["initState"])(vm); // 初始化状态：data
 
     Object(_lifecycle__WEBPACK_IMPORTED_MODULE_2__["callHook"])(vm, 'created'); // new Vue()时如果传了el自动$mount
 
@@ -686,7 +686,8 @@ function initRender(vm) {
   var options = vm.$options;
   var parentVnode = vm.$vnode = options._parentVnode; // the placeholder node in parent tree
 
-  var renderContext = parentVnode && parentVnode.context; // vm.$createElement 用户自定义render时使用
+  var renderContext = parentVnode && parentVnode.context; // eslint-disable-line
+  // vm.$createElement 用户自定义render时使用
 
   vm.$createElement = function (a, b, c, d) {
     return Object(_vdom_create_element__WEBPACK_IMPORTED_MODULE_0__["createElement"])(vm, a, b, c, d, true);
@@ -743,7 +744,7 @@ function proxy(vm, sourcekey, key) {
 /*!********************************!*\
   !*** ./src/core/util/index.js ***!
   \********************************/
-/*! exports provided: mergeOptions, resolveAsset, isPrimitive, hasOwn, extend, isObject, isPlainObject, makeMap, noop, no, identity, cached, camelize, capitalize */
+/*! exports provided: isPrimitive, hasOwn, extend, isObject, isPlainObject, makeMap, noop, no, identity, cached, camelize, capitalize, mergeOptions, resolveAsset */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -959,9 +960,9 @@ var componentVNodeHooks = {
     );
     child.$mount(undefined);
   },
-  prepatch: function prepatch(oldVnode, vnode) {
-    var options = vnode.componentOptions;
-    var child = vnode.componentInstance = oldVnode.componentInstance; // updateChildComponent(
+  prepatch: function prepatch(oldVnode, vnode) {// const options = vnode.componentOptions
+    // const child = vnode.componentInstance = oldVnode.componentInstance
+    // updateChildComponent(
     //   child,
     //   options.propsData, // updated props
     //   options.listeners, // updated listeners
@@ -1117,7 +1118,9 @@ children, normalizationType) {
       // platform built-in elements
       // dom原生保留标签
       vnode = new core_vdom_vnode__WEBPACK_IMPORTED_MODULE_1__["default"](tag, data, children, undefined, undefined, context);
-    } // 全局注册的组件在原型链上都可以resolve到, 局部注册的组件只有在当前实例才能resolve到
+    } // eslint-disable-line
+    // 全局注册的组件在原型链上都可以resolve到, 局部注册的组件只有在当前实例才能resolve到
+    // eslint-disable-next-line
     else if (Ctor = Object(_util__WEBPACK_IMPORTED_MODULE_3__["resolveAsset"])(context.$options, 'components', tag)) {
         // 实例上注册的组件
         // 全局注册：new Vue()之前事先调用 Vue.component静态方法, 继承了Vue的构造器, 随后createComponent()时不用再继承
@@ -1796,7 +1799,7 @@ function isUnknownElement(tag) {
 /*!*******************************!*\
   !*** ./src/web/util/index.js ***!
   \*******************************/
-/*! exports provided: isHTMLTag, isSVG, isReservedTag, isUnknownElement, query */
+/*! exports provided: query, isHTMLTag, isSVG, isReservedTag, isUnknownElement */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";

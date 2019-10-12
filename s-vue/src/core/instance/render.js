@@ -28,7 +28,7 @@ export function initRender (vm) {
   vm._vnode = null // the root of the child tree
   const options = vm.$options
   const parentVnode = vm.$vnode = options._parentVnode // the placeholder node in parent tree
-  const renderContext = parentVnode && parentVnode.context
+  const renderContext = parentVnode && parentVnode.context // eslint-disable-line
   // vm.$createElement 用户自定义render时使用
   vm.$createElement = (a, b, c, d) => createElement(vm, a, b, c, d, true)
 }

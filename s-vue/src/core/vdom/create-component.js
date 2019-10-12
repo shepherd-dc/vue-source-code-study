@@ -13,8 +13,8 @@ const componentVNodeHooks = {
   },
 
   prepatch (oldVnode, vnode) {
-    const options = vnode.componentOptions
-    const child = vnode.componentInstance = oldVnode.componentInstance
+    // const options = vnode.componentOptions
+    // const child = vnode.componentInstance = oldVnode.componentInstance
     // updateChildComponent(
     //   child,
     //   options.propsData, // updated props

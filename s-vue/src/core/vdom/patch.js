@@ -2,7 +2,6 @@ import * as nodeOps from 'web/runtime/node-ops'
 import VNode from './vnode'
 
 export function createPatchFunction () {
-  
   // 在dom的基础上新建一个空的vnode, dom属性保存在elm上
   function emptyNodeAt (elm) {
     return new VNode(nodeOps.tagName(elm).toLowerCase(), {}, [], undefined, elm)

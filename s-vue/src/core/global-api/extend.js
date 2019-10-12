@@ -32,11 +32,11 @@ export function initExtend (SVue) {
       Super.options,
       extendOptions
     )
-    Sub['super'] = Super
+    Sub.super = Super
 
     // allow further extension/mixin/plugin usage
     Sub.extend = Super.extend
-    
+
     // enable recursive self-lookup
     if (name) {
       Sub.options.components[name] = Sub
