@@ -706,6 +706,8 @@ function initRender(vm) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "initState", function() { return initState; });
+/* harmony import */ var _observer_index__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../observer/index */ "./src/core/observer/index.js");
+
 function initState(vm) {
   var opts = vm.$options; // 初始化data
 
@@ -720,7 +722,14 @@ function initData(vm) {
 
   Object.keys(data).forEach(function (key) {
     proxy(vm, '_data', key);
-  });
+  }); // eslint-disable-next-line
+
+  debugger; // observe data
+  // asRootData: 这步作为根数据，下面会递归observe进行对深层对象的绑定
+
+  Object(_observer_index__WEBPACK_IMPORTED_MODULE_0__["observe"])(data, true
+  /* asRootData */
+  );
 }
 
 function getData(data, vm) {
@@ -740,15 +749,292 @@ function proxy(vm, sourcekey, key) {
 
 /***/ }),
 
-/***/ "./src/core/util/index.js":
-/*!********************************!*\
-  !*** ./src/core/util/index.js ***!
-  \********************************/
-/*! exports provided: isPrimitive, hasOwn, extend, isObject, isPlainObject, makeMap, noop, no, identity, cached, camelize, capitalize, mergeOptions, resolveAsset */
+/***/ "./src/core/observer/array.js":
+/*!************************************!*\
+  !*** ./src/core/observer/array.js ***!
+  \************************************/
+/*! exports provided: arrayMethods */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "arrayMethods", function() { return arrayMethods; });
+/* harmony import */ var _util_index__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../util/index */ "./src/core/util/index.js");
+
+var arrayProto = Array.prototype;
+var arrayMethods = Object.create(arrayProto);
+var methodsToPatch = ['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse'];
+/**
+ * Intercept mutating methods and emit events
+ */
+
+methodsToPatch.forEach(function (method) {
+  // cache original method
+  var original = arrayProto[method];
+  Object(_util_index__WEBPACK_IMPORTED_MODULE_0__["def"])(arrayMethods, method, function mutator() {
+    for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+
+    var result = original.apply(this, args);
+    var ob = this.__ob__;
+    var inserted;
+
+    switch (method) {
+      case 'push':
+      case 'unshift':
+        inserted = args;
+        break;
+
+      case 'splice':
+        inserted = args.slice(2);
+        break;
+    }
+
+    if (inserted) ob.observeArray(inserted); // notify change
+
+    ob.dep.notify();
+    return result;
+  });
+});
+
+/***/ }),
+
+/***/ "./src/core/observer/index.js":
+/*!************************************!*\
+  !*** ./src/core/observer/index.js ***!
+  \************************************/
+/*! exports provided: shouldObserve, toggleObserving, Observer, observe, defineReactive */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "shouldObserve", function() { return shouldObserve; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "toggleObserving", function() { return toggleObserving; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Observer", function() { return Observer; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "observe", function() { return observe; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "defineReactive", function() { return defineReactive; });
+/* harmony import */ var _util_index__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../util/index */ "./src/core/util/index.js");
+/* harmony import */ var _array__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./array */ "./src/core/observer/array.js");
+/* harmony import */ var _vdom_vnode__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../vdom/vnode */ "./src/core/vdom/vnode.js");
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+
+
+
+var arrayKeys = Object.getOwnPropertyNames(_array__WEBPACK_IMPORTED_MODULE_1__["arrayMethods"]);
+/**
+ * In some cases we may want to disable observation inside a component's
+ * update computation.
+ */
+
+var shouldObserve = true;
+function toggleObserving(value) {
+  shouldObserve = value;
+}
+/**
+ * Observer class that is attached to each observed object.
+ * Once attached, the observer converts the target
+ * object's property keys into getter/setters that
+ * collect dependencies and dispatch updates.
+ */
+
+var Observer =
+/*#__PURE__*/
+function () {
+  // value: any;
+  // dep: Dep;
+  // vmCount: number; // number of vms that have this object as root $data
+  function Observer(value) {
+    _classCallCheck(this, Observer);
+
+    this.value = value;
+    this.vmCount = 0;
+    Object(_util_index__WEBPACK_IMPORTED_MODULE_0__["def"])(value, '__ob__', this);
+
+    if (Array.isArray(value)) {
+      if ('__proto__' in {}) {
+        protoAugment(value, _array__WEBPACK_IMPORTED_MODULE_1__["arrayMethods"]);
+      } else {
+        copyAugment(value, _array__WEBPACK_IMPORTED_MODULE_1__["arrayMethods"], arrayKeys);
+      }
+
+      this.observeArray(value);
+    } else {
+      this.walk(value);
+    }
+  }
+  /**
+   * Walk through all properties and convert them into
+   * getter/setters. This method should only be called when
+   * value type is Object.
+   */
+
+
+  _createClass(Observer, [{
+    key: "walk",
+    value: function walk(obj) {
+      var keys = Object.keys(obj);
+
+      for (var i = 0; i < keys.length; i++) {
+        defineReactive(obj, keys[i]);
+      }
+    }
+    /**
+     * Observe a list of Array items.
+     */
+
+  }, {
+    key: "observeArray",
+    value: function observeArray(items) {
+      for (var i = 0, l = items.length; i < l; i++) {
+        observe(items[i]);
+      }
+    }
+  }]);
+
+  return Observer;
+}();
+/**
+ * Attempt to create an observer instance for a value,
+ * returns the new observer if successfully observed,
+ * or the existing observer if the value already has one.
+ */
+
+function observe(value, asRootData) {
+  if (!Object(_util_index__WEBPACK_IMPORTED_MODULE_0__["isObject"])(value) || value instanceof _vdom_vnode__WEBPACK_IMPORTED_MODULE_2__["default"]) {
+    return;
+  }
+
+  var ob;
+
+  if (Object(_util_index__WEBPACK_IMPORTED_MODULE_0__["hasOwn"])(value, '__ob__') && value.__ob__ instanceof Observer) {
+    ob = value.__ob__;
+  } else if (shouldObserve && (Array.isArray(value) || Object(_util_index__WEBPACK_IMPORTED_MODULE_0__["isPlainObject"])(value)) && Object.isExtensible(value) && !value._isVue) {
+    ob = new Observer(value);
+  }
+
+  if (asRootData && ob) {
+    ob.vmCount++;
+  }
+
+  return ob;
+}
+/**
+ * Define a reactive property on an Object.
+ */
+
+function defineReactive(obj, // Object,
+key, // string,
+val, // any,
+customSetter, // Function,
+shallow // boolean
+) {
+  // const dep = new Dep()
+  var property = Object.getOwnPropertyDescriptor(obj, key);
+
+  if (property && property.configurable === false) {
+    return;
+  } // cater for pre-defined getter/setters
+
+
+  var getter = property && property.get;
+  var setter = property && property.set;
+
+  if ((!getter || setter) && arguments.length === 2) {
+    val = obj[key];
+  } // eslint-disable-next-line
+
+
+  var childOb = !shallow && observe(val);
+  Object.defineProperty(obj, key, {
+    enumerable: true,
+    configurable: true,
+    get: function reactiveGetter() {
+      var value = getter ? getter.call(obj) : val; // if (Dep.target) {
+      //   dep.depend()
+      //   if (childOb) {
+      //     childOb.dep.depend()
+      //     if (Array.isArray(value)) {
+      //       dependArray(value)
+      //     }
+      //   }
+      // }
+
+      return value;
+    },
+    set: function reactiveSetter(newVal) {
+      var value = getter ? getter.call(obj) : val;
+      /* eslint-disable no-self-compare */
+
+      if (newVal === value || newVal !== newVal && value !== value) {
+        return;
+      }
+      /* eslint-enable no-self-compare */
+
+
+      if ( true && customSetter) {
+        customSetter();
+      } // #7981: for accessor properties without setter
+
+
+      if (getter && !setter) return;
+
+      if (setter) {
+        setter.call(obj, newVal);
+      } else {
+        val = newVal;
+      }
+
+      childOb = !shallow && observe(newVal); // dep.notify()
+    }
+  });
+}
+/**
+ * Augment an target Object or Array by intercepting
+ * the prototype chain using __proto__
+ */
+
+/* 直接覆盖原型的方法来修改目标对象或数组 */
+
+function protoAugment(target, src) {
+  /* eslint-disable no-proto */
+  target.__proto__ = src;
+  /* eslint-enable no-proto */
+}
+/**
+ * Augment an target Object or Array by defining
+ * hidden properties.
+ */
+
+/* istanbul ignore next */
+
+/* 定义（覆盖）目标对象或数组的某一个方法 */
+
+
+function copyAugment(target, src, keys) {
+  for (var i = 0, l = keys.length; i < l; i++) {
+    var key = keys[i];
+    Object(_util_index__WEBPACK_IMPORTED_MODULE_0__["def"])(target, key, src[key]);
+  }
+}
+
+/***/ }),
+
+/***/ "./src/core/util/index.js":
+/*!********************************!*\
+  !*** ./src/core/util/index.js ***!
+  \********************************/
+/*! exports provided: mergeOptions, resolveAsset, isPrimitive, hasOwn, extend, isObject, isPlainObject, makeMap, noop, no, identity, cached, camelize, capitalize, def */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "def", function() { return def; });
 /* harmony import */ var _options__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./options */ "./src/core/util/options.js");
 /* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "mergeOptions", function() { return _options__WEBPACK_IMPORTED_MODULE_0__["mergeOptions"]; });
 
@@ -781,6 +1067,18 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+/**
+ * Define a property.
+ */
+
+function def(obj, key, val, enumerable) {
+  Object.defineProperty(obj, key, {
+    value: val,
+    enumerable: !!enumerable,
+    writable: true,
+    configurable: true
+  });
+}
 
 /***/ }),
 
@@ -1799,7 +2097,7 @@ function isUnknownElement(tag) {
 /*!*******************************!*\
   !*** ./src/web/util/index.js ***!
   \*******************************/
-/*! exports provided: query, isHTMLTag, isSVG, isReservedTag, isUnknownElement */
+/*! exports provided: isHTMLTag, isSVG, isReservedTag, isUnknownElement, query */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";

@@ -1,3 +1,5 @@
+import { observe } from '../observer/index'
+
 export function initState (vm) {
   const opts = vm.$options
 
@@ -15,6 +17,11 @@ function initData (vm) {
   Object.keys(data).forEach(key => {
     proxy(vm, '_data', key)
   })
+  // eslint-disable-next-line
+  debugger
+  // observe data
+  // asRootData: 这步作为根数据，下面会递归observe进行对深层对象的绑定
+  observe(data, true /* asRootData */)
 }
 
 function getData (data, vm) {
