@@ -800,6 +800,102 @@ methodsToPatch.forEach(function (method) {
 
 /***/ }),
 
+/***/ "./src/core/observer/dep.js":
+/*!**********************************!*\
+  !*** ./src/core/observer/dep.js ***!
+  \**********************************/
+/*! exports provided: default, pushTarget, popTarget */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return Dep; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "pushTarget", function() { return pushTarget; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "popTarget", function() { return popTarget; });
+/* harmony import */ var _util_index__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../util/index */ "./src/core/util/index.js");
+/* harmony import */ var _config__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../config */ "./src/core/config.js");
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+
+
+var uid = 0;
+/**
+ * A dep is an observable that can have multiple
+ * directives subscribing to it.
+ */
+
+var Dep =
+/*#__PURE__*/
+function () {
+  function Dep() {
+    _classCallCheck(this, Dep);
+
+    this.id = uid++;
+    this.subs = [];
+  }
+
+  _createClass(Dep, [{
+    key: "addSub",
+    value: function addSub(sub) {
+      this.subs.push(sub);
+    }
+  }, {
+    key: "removeSub",
+    value: function removeSub(sub) {
+      Object(_util_index__WEBPACK_IMPORTED_MODULE_0__["remove"])(this.subs, sub);
+    }
+  }, {
+    key: "depend",
+    value: function depend() {
+      if (Dep.target) {
+        Dep.target.addDep(this);
+      }
+    }
+  }, {
+    key: "notify",
+    value: function notify() {
+      // stabilize the subscriber list first
+      var subs = this.subs.slice();
+
+      if ( true && !_config__WEBPACK_IMPORTED_MODULE_1__["default"].async) {
+        // subs aren't sorted in scheduler if not running async
+        // we need to sort them now to make sure they fire in correct
+        // order
+        subs.sort(function (a, b) {
+          return a.id - b.id;
+        });
+      }
+
+      for (var i = 0, l = subs.length; i < l; i++) {
+        subs[i].update();
+      }
+    }
+  }]);
+
+  return Dep;
+}(); // The current target watcher being evaluated.
+// This is globally unique because only one watcher
+// can be evaluated at a time.
+
+
+
+Dep.target = null;
+var targetStack = [];
+function pushTarget(target) {
+  targetStack.push(target);
+  Dep.target = target;
+}
+function popTarget() {
+  targetStack.pop();
+  Dep.target = targetStack[targetStack.length - 1];
+}
+
+/***/ }),
+
 /***/ "./src/core/observer/index.js":
 /*!************************************!*\
   !*** ./src/core/observer/index.js ***!
@@ -817,11 +913,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _util_index__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../util/index */ "./src/core/util/index.js");
 /* harmony import */ var _array__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./array */ "./src/core/observer/array.js");
 /* harmony import */ var _vdom_vnode__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../vdom/vnode */ "./src/core/vdom/vnode.js");
+/* harmony import */ var _dep__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./dep */ "./src/core/observer/dep.js");
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
 
 
 
@@ -934,7 +1032,7 @@ val, // any,
 customSetter, // Function,
 shallow // boolean
 ) {
-  // const dep = new Dep()
+  var dep = new _dep__WEBPACK_IMPORTED_MODULE_3__["default"]();
   var property = Object.getOwnPropertyDescriptor(obj, key);
 
   if (property && property.configurable === false) {
@@ -947,23 +1045,26 @@ shallow // boolean
 
   if ((!getter || setter) && arguments.length === 2) {
     val = obj[key];
-  } // eslint-disable-next-line
-
+  }
 
   var childOb = !shallow && observe(val);
   Object.defineProperty(obj, key, {
     enumerable: true,
     configurable: true,
     get: function reactiveGetter() {
-      var value = getter ? getter.call(obj) : val; // if (Dep.target) {
-      //   dep.depend()
-      //   if (childOb) {
-      //     childOb.dep.depend()
-      //     if (Array.isArray(value)) {
-      //       dependArray(value)
-      //     }
-      //   }
-      // }
+      var value = getter ? getter.call(obj) : val;
+
+      if (_dep__WEBPACK_IMPORTED_MODULE_3__["default"].target) {
+        dep.depend();
+
+        if (childOb) {
+          childOb.dep.depend();
+
+          if (Array.isArray(value)) {
+            dependArray(value);
+          }
+        }
+      }
 
       return value;
     },
@@ -990,7 +1091,8 @@ shallow // boolean
         val = newVal;
       }
 
-      childOb = !shallow && observe(newVal); // dep.notify()
+      childOb = !shallow && observe(newVal);
+      dep.notify();
     }
   });
 }
@@ -1022,6 +1124,22 @@ function copyAugment(target, src, keys) {
     Object(_util_index__WEBPACK_IMPORTED_MODULE_0__["def"])(target, key, src[key]);
   }
 }
+/**
+ * Collect dependencies on array elements when the array is touched, since
+ * we cannot intercept array element access like property getters.
+ */
+
+
+function dependArray(value) {
+  for (var e, i = 0, l = value.length; i < l; i++) {
+    e = value[i];
+    e && e.__ob__ && e.__ob__.dep.depend();
+
+    if (Array.isArray(e)) {
+      dependArray(e);
+    }
+  }
+}
 
 /***/ }),
 
@@ -1029,7 +1147,7 @@ function copyAugment(target, src, keys) {
 /*!********************************!*\
   !*** ./src/core/util/index.js ***!
   \********************************/
-/*! exports provided: mergeOptions, resolveAsset, isPrimitive, hasOwn, extend, isObject, isPlainObject, makeMap, noop, no, identity, cached, camelize, capitalize, def */
+/*! exports provided: isPrimitive, hasOwn, extend, isObject, isPlainObject, makeMap, noop, no, identity, cached, camelize, capitalize, remove, def, mergeOptions, resolveAsset */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -1064,6 +1182,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "camelize", function() { return shared_util__WEBPACK_IMPORTED_MODULE_1__["camelize"]; });
 
 /* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "capitalize", function() { return shared_util__WEBPACK_IMPORTED_MODULE_1__["capitalize"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "remove", function() { return shared_util__WEBPACK_IMPORTED_MODULE_1__["remove"]; });
 
 
 
@@ -1796,7 +1916,7 @@ var LIFECYCLE_HOOKS = ['beforeCreate', 'created', 'beforeMount', 'mounted', 'bef
 /*!****************************!*\
   !*** ./src/shared/util.js ***!
   \****************************/
-/*! exports provided: isPrimitive, hasOwn, extend, isObject, isPlainObject, makeMap, noop, no, identity, cached, camelize, capitalize */
+/*! exports provided: isPrimitive, hasOwn, extend, isObject, isPlainObject, makeMap, noop, no, identity, cached, camelize, capitalize, remove */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -1813,6 +1933,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "cached", function() { return cached; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "camelize", function() { return camelize; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "capitalize", function() { return capitalize; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "remove", function() { return remove; });
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 /**
@@ -1932,6 +2053,19 @@ var camelize = cached(function (str) {
 var capitalize = cached(function (str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 });
+/**
+ * Remove an item from an array.
+ */
+
+function remove(arr, item) {
+  if (arr.length) {
+    var index = arr.indexOf(item);
+
+    if (index > -1) {
+      return arr.splice(index, 1);
+    }
+  }
+}
 
 /***/ }),
 
@@ -2097,7 +2231,7 @@ function isUnknownElement(tag) {
 /*!*******************************!*\
   !*** ./src/web/util/index.js ***!
   \*******************************/
-/*! exports provided: isHTMLTag, isSVG, isReservedTag, isUnknownElement, query */
+/*! exports provided: query, isHTMLTag, isSVG, isReservedTag, isUnknownElement */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";

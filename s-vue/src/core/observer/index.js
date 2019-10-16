@@ -1,6 +1,7 @@
 import { def, hasOwn, isObject, isPlainObject } from '../util/index'
 import { arrayMethods } from './array'
 import VNode from '../vdom/vnode'
+import Dep from './dep'
 
 const arrayKeys = Object.getOwnPropertyNames(arrayMethods)
 
@@ -98,7 +99,7 @@ export function defineReactive (
   customSetter, // Function,
   shallow // boolean
 ) {
-  // const dep = new Dep()
+  const dep = new Dep()
   const property = Object.getOwnPropertyDescriptor(obj, key)
   if (property && property.configurable === false) {
     return
@@ -111,22 +112,21 @@ export function defineReactive (
     val = obj[key]
   }
 
-  // eslint-disable-next-line
   let childOb = !shallow && observe(val)
   Object.defineProperty(obj, key, {
     enumerable: true,
     configurable: true,
     get: function reactiveGetter () {
       const value = getter ? getter.call(obj) : val
-      // if (Dep.target) {
-      //   dep.depend()
-      //   if (childOb) {
-      //     childOb.dep.depend()
-      //     if (Array.isArray(value)) {
-      //       dependArray(value)
-      //     }
-      //   }
-      // }
+      if (Dep.target) {
+        dep.depend()
+        if (childOb) {
+          childOb.dep.depend()
+          if (Array.isArray(value)) {
+            dependArray(value)
+          }
+        }
+      }
       return value
     },
     set: function reactiveSetter (newVal) {
@@ -147,7 +147,7 @@ export function defineReactive (
         val = newVal
       }
       childOb = !shallow && observe(newVal)
-      // dep.notify()
+      dep.notify()
     }
   })
 }
@@ -173,5 +173,19 @@ function copyAugment (target, src, keys) {
   for (let i = 0, l = keys.length; i < l; i++) {
     const key = keys[i]
     def(target, key, src[key])
+  }
+}
+
+/**
+ * Collect dependencies on array elements when the array is touched, since
+ * we cannot intercept array element access like property getters.
+ */
+function dependArray (value) {
+  for (let e, i = 0, l = value.length; i < l; i++) {
+    e = value[i]
+    e && e.__ob__ && e.__ob__.dep.depend()
+    if (Array.isArray(e)) {
+      dependArray(e)
+    }
   }
 }

@@ -110,3 +110,15 @@ export const camelize = cached((str) => {
 export const capitalize = cached((str) => {
   return str.charAt(0).toUpperCase() + str.slice(1)
 })
+
+/**
+ * Remove an item from an array.
+ */
+export function remove (arr, item) {
+  if (arr.length) {
+    const index = arr.indexOf(item)
+    if (index > -1) {
+      return arr.splice(index, 1)
+    }
+  }
+}
