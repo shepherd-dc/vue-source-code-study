@@ -60,10 +60,13 @@
         }
       },
       created() {
-        console.log('SVue instance created', this.foo.bar)
+        this.foo.bar = 'new bar'
       },
       mounted() {
         console.log('SVue instance mounted')
+        this.$nextTick(()=>{
+          console.log(this.foo.bar)
+        })
       },
       render(h) {
         // 渲染dom保留标签

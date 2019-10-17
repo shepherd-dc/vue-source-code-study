@@ -96,6 +96,535 @@ return /******/ (function(modules) { // webpackBootstrap
 /************************************************************************/
 /******/ ({
 
+/***/ "./node_modules/process/browser.js":
+/*!*****************************************!*\
+  !*** ./node_modules/process/browser.js ***!
+  \*****************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+// shim for using process in browser
+var process = module.exports = {}; // cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+function defaultSetTimout() {
+  throw new Error('setTimeout has not been defined');
+}
+
+function defaultClearTimeout() {
+  throw new Error('clearTimeout has not been defined');
+}
+
+(function () {
+  try {
+    if (typeof setTimeout === 'function') {
+      cachedSetTimeout = setTimeout;
+    } else {
+      cachedSetTimeout = defaultSetTimout;
+    }
+  } catch (e) {
+    cachedSetTimeout = defaultSetTimout;
+  }
+
+  try {
+    if (typeof clearTimeout === 'function') {
+      cachedClearTimeout = clearTimeout;
+    } else {
+      cachedClearTimeout = defaultClearTimeout;
+    }
+  } catch (e) {
+    cachedClearTimeout = defaultClearTimeout;
+  }
+})();
+
+function runTimeout(fun) {
+  if (cachedSetTimeout === setTimeout) {
+    //normal enviroments in sane situations
+    return setTimeout(fun, 0);
+  } // if setTimeout wasn't available but was latter defined
+
+
+  if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+    cachedSetTimeout = setTimeout;
+    return setTimeout(fun, 0);
+  }
+
+  try {
+    // when when somebody has screwed with setTimeout but no I.E. maddness
+    return cachedSetTimeout(fun, 0);
+  } catch (e) {
+    try {
+      // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+      return cachedSetTimeout.call(null, fun, 0);
+    } catch (e) {
+      // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+      return cachedSetTimeout.call(this, fun, 0);
+    }
+  }
+}
+
+function runClearTimeout(marker) {
+  if (cachedClearTimeout === clearTimeout) {
+    //normal enviroments in sane situations
+    return clearTimeout(marker);
+  } // if clearTimeout wasn't available but was latter defined
+
+
+  if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+    cachedClearTimeout = clearTimeout;
+    return clearTimeout(marker);
+  }
+
+  try {
+    // when when somebody has screwed with setTimeout but no I.E. maddness
+    return cachedClearTimeout(marker);
+  } catch (e) {
+    try {
+      // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+      return cachedClearTimeout.call(null, marker);
+    } catch (e) {
+      // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+      // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+      return cachedClearTimeout.call(this, marker);
+    }
+  }
+}
+
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+  if (!draining || !currentQueue) {
+    return;
+  }
+
+  draining = false;
+
+  if (currentQueue.length) {
+    queue = currentQueue.concat(queue);
+  } else {
+    queueIndex = -1;
+  }
+
+  if (queue.length) {
+    drainQueue();
+  }
+}
+
+function drainQueue() {
+  if (draining) {
+    return;
+  }
+
+  var timeout = runTimeout(cleanUpNextTick);
+  draining = true;
+  var len = queue.length;
+
+  while (len) {
+    currentQueue = queue;
+    queue = [];
+
+    while (++queueIndex < len) {
+      if (currentQueue) {
+        currentQueue[queueIndex].run();
+      }
+    }
+
+    queueIndex = -1;
+    len = queue.length;
+  }
+
+  currentQueue = null;
+  draining = false;
+  runClearTimeout(timeout);
+}
+
+process.nextTick = function (fun) {
+  var args = new Array(arguments.length - 1);
+
+  if (arguments.length > 1) {
+    for (var i = 1; i < arguments.length; i++) {
+      args[i - 1] = arguments[i];
+    }
+  }
+
+  queue.push(new Item(fun, args));
+
+  if (queue.length === 1 && !draining) {
+    runTimeout(drainQueue);
+  }
+}; // v8 likes predictible objects
+
+
+function Item(fun, array) {
+  this.fun = fun;
+  this.array = array;
+}
+
+Item.prototype.run = function () {
+  this.fun.apply(null, this.array);
+};
+
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+
+process.versions = {};
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+process.prependListener = noop;
+process.prependOnceListener = noop;
+
+process.listeners = function (name) {
+  return [];
+};
+
+process.binding = function (name) {
+  throw new Error('process.binding is not supported');
+};
+
+process.cwd = function () {
+  return '/';
+};
+
+process.chdir = function (dir) {
+  throw new Error('process.chdir is not supported');
+};
+
+process.umask = function () {
+  return 0;
+};
+
+/***/ }),
+
+/***/ "./node_modules/setimmediate/setImmediate.js":
+/*!***************************************************!*\
+  !*** ./node_modules/setimmediate/setImmediate.js ***!
+  \***************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(global, process) {(function (global, undefined) {
+  "use strict";
+
+  if (global.setImmediate) {
+    return;
+  }
+
+  var nextHandle = 1; // Spec says greater than zero
+
+  var tasksByHandle = {};
+  var currentlyRunningATask = false;
+  var doc = global.document;
+  var registerImmediate;
+
+  function setImmediate(callback) {
+    // Callback can either be a function or a string
+    if (typeof callback !== "function") {
+      callback = new Function("" + callback);
+    } // Copy function arguments
+
+
+    var args = new Array(arguments.length - 1);
+
+    for (var i = 0; i < args.length; i++) {
+      args[i] = arguments[i + 1];
+    } // Store and register the task
+
+
+    var task = {
+      callback: callback,
+      args: args
+    };
+    tasksByHandle[nextHandle] = task;
+    registerImmediate(nextHandle);
+    return nextHandle++;
+  }
+
+  function clearImmediate(handle) {
+    delete tasksByHandle[handle];
+  }
+
+  function run(task) {
+    var callback = task.callback;
+    var args = task.args;
+
+    switch (args.length) {
+      case 0:
+        callback();
+        break;
+
+      case 1:
+        callback(args[0]);
+        break;
+
+      case 2:
+        callback(args[0], args[1]);
+        break;
+
+      case 3:
+        callback(args[0], args[1], args[2]);
+        break;
+
+      default:
+        callback.apply(undefined, args);
+        break;
+    }
+  }
+
+  function runIfPresent(handle) {
+    // From the spec: "Wait until any invocations of this algorithm started before this one have completed."
+    // So if we're currently running a task, we'll need to delay this invocation.
+    if (currentlyRunningATask) {
+      // Delay by doing a setTimeout. setImmediate was tried instead, but in Firefox 7 it generated a
+      // "too much recursion" error.
+      setTimeout(runIfPresent, 0, handle);
+    } else {
+      var task = tasksByHandle[handle];
+
+      if (task) {
+        currentlyRunningATask = true;
+
+        try {
+          run(task);
+        } finally {
+          clearImmediate(handle);
+          currentlyRunningATask = false;
+        }
+      }
+    }
+  }
+
+  function installNextTickImplementation() {
+    registerImmediate = function registerImmediate(handle) {
+      process.nextTick(function () {
+        runIfPresent(handle);
+      });
+    };
+  }
+
+  function canUsePostMessage() {
+    // The test against `importScripts` prevents this implementation from being installed inside a web worker,
+    // where `global.postMessage` means something completely different and can't be used for this purpose.
+    if (global.postMessage && !global.importScripts) {
+      var postMessageIsAsynchronous = true;
+      var oldOnMessage = global.onmessage;
+
+      global.onmessage = function () {
+        postMessageIsAsynchronous = false;
+      };
+
+      global.postMessage("", "*");
+      global.onmessage = oldOnMessage;
+      return postMessageIsAsynchronous;
+    }
+  }
+
+  function installPostMessageImplementation() {
+    // Installs an event handler on `global` for the `message` event: see
+    // * https://developer.mozilla.org/en/DOM/window.postMessage
+    // * http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html#crossDocumentMessages
+    var messagePrefix = "setImmediate$" + Math.random() + "$";
+
+    var onGlobalMessage = function onGlobalMessage(event) {
+      if (event.source === global && typeof event.data === "string" && event.data.indexOf(messagePrefix) === 0) {
+        runIfPresent(+event.data.slice(messagePrefix.length));
+      }
+    };
+
+    if (global.addEventListener) {
+      global.addEventListener("message", onGlobalMessage, false);
+    } else {
+      global.attachEvent("onmessage", onGlobalMessage);
+    }
+
+    registerImmediate = function registerImmediate(handle) {
+      global.postMessage(messagePrefix + handle, "*");
+    };
+  }
+
+  function installMessageChannelImplementation() {
+    var channel = new MessageChannel();
+
+    channel.port1.onmessage = function (event) {
+      var handle = event.data;
+      runIfPresent(handle);
+    };
+
+    registerImmediate = function registerImmediate(handle) {
+      channel.port2.postMessage(handle);
+    };
+  }
+
+  function installReadyStateChangeImplementation() {
+    var html = doc.documentElement;
+
+    registerImmediate = function registerImmediate(handle) {
+      // Create a <script> element; its readystatechange event will be fired asynchronously once it is inserted
+      // into the document. Do so, thus queuing up the task. Remember to clean up once it's been called.
+      var script = doc.createElement("script");
+
+      script.onreadystatechange = function () {
+        runIfPresent(handle);
+        script.onreadystatechange = null;
+        html.removeChild(script);
+        script = null;
+      };
+
+      html.appendChild(script);
+    };
+  }
+
+  function installSetTimeoutImplementation() {
+    registerImmediate = function registerImmediate(handle) {
+      setTimeout(runIfPresent, 0, handle);
+    };
+  } // If supported, we should attach to the prototype of global, since that is where setTimeout et al. live.
+
+
+  var attachTo = Object.getPrototypeOf && Object.getPrototypeOf(global);
+  attachTo = attachTo && attachTo.setTimeout ? attachTo : global; // Don't get fooled by e.g. browserify environments.
+
+  if ({}.toString.call(global.process) === "[object process]") {
+    // For Node.js before 0.9
+    installNextTickImplementation();
+  } else if (canUsePostMessage()) {
+    // For non-IE10 modern browsers
+    installPostMessageImplementation();
+  } else if (global.MessageChannel) {
+    // For web workers, where supported
+    installMessageChannelImplementation();
+  } else if (doc && "onreadystatechange" in doc.createElement("script")) {
+    // For IE 6–8
+    installReadyStateChangeImplementation();
+  } else {
+    // For older browsers
+    installSetTimeoutImplementation();
+  }
+
+  attachTo.setImmediate = setImmediate;
+  attachTo.clearImmediate = clearImmediate;
+})(typeof self === "undefined" ? typeof global === "undefined" ? this : global : self);
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../webpack/buildin/global.js */ "./node_modules/webpack/buildin/global.js"), __webpack_require__(/*! ./../process/browser.js */ "./node_modules/process/browser.js")))
+
+/***/ }),
+
+/***/ "./node_modules/timers-browserify/main.js":
+/*!************************************************!*\
+  !*** ./node_modules/timers-browserify/main.js ***!
+  \************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(global) {var scope = typeof global !== "undefined" && global || typeof self !== "undefined" && self || window;
+var apply = Function.prototype.apply; // DOM APIs, for completeness
+
+exports.setTimeout = function () {
+  return new Timeout(apply.call(setTimeout, scope, arguments), clearTimeout);
+};
+
+exports.setInterval = function () {
+  return new Timeout(apply.call(setInterval, scope, arguments), clearInterval);
+};
+
+exports.clearTimeout = exports.clearInterval = function (timeout) {
+  if (timeout) {
+    timeout.close();
+  }
+};
+
+function Timeout(id, clearFn) {
+  this._id = id;
+  this._clearFn = clearFn;
+}
+
+Timeout.prototype.unref = Timeout.prototype.ref = function () {};
+
+Timeout.prototype.close = function () {
+  this._clearFn.call(scope, this._id);
+}; // Does not start the time, just sets up the members needed.
+
+
+exports.enroll = function (item, msecs) {
+  clearTimeout(item._idleTimeoutId);
+  item._idleTimeout = msecs;
+};
+
+exports.unenroll = function (item) {
+  clearTimeout(item._idleTimeoutId);
+  item._idleTimeout = -1;
+};
+
+exports._unrefActive = exports.active = function (item) {
+  clearTimeout(item._idleTimeoutId);
+  var msecs = item._idleTimeout;
+
+  if (msecs >= 0) {
+    item._idleTimeoutId = setTimeout(function onTimeout() {
+      if (item._onTimeout) item._onTimeout();
+    }, msecs);
+  }
+}; // setimmediate attaches itself to the global object
+
+
+__webpack_require__(/*! setimmediate */ "./node_modules/setimmediate/setImmediate.js"); // On some exotic environments, it's not clear which object `setimmediate` was
+// able to install onto.  Search each possibility in the same order as the
+// `setimmediate` library.
+
+
+exports.setImmediate = typeof self !== "undefined" && self.setImmediate || typeof global !== "undefined" && global.setImmediate || this && this.setImmediate;
+exports.clearImmediate = typeof self !== "undefined" && self.clearImmediate || typeof global !== "undefined" && global.clearImmediate || this && this.clearImmediate;
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../webpack/buildin/global.js */ "./node_modules/webpack/buildin/global.js")))
+
+/***/ }),
+
+/***/ "./node_modules/webpack/buildin/global.js":
+/*!***********************************!*\
+  !*** (webpack)/buildin/global.js ***!
+  \***********************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+var g; // This works in non-strict mode
+
+g = function () {
+  return this;
+}();
+
+try {
+  // This works if eval is allowed (see CSP)
+  g = g || new Function("return this")();
+} catch (e) {
+  // This works if the window reference is available
+  if ((typeof window === "undefined" ? "undefined" : _typeof(window)) === "object") g = window;
+} // g can still be undefined, but nothing to do about it...
+// We return undefined, instead of nothing here, so it's
+// easier to handle this case. if(!global) { ...}
+
+
+module.exports = g;
+
+/***/ }),
+
 /***/ "./src/core/config.js":
 /*!****************************!*\
   !*** ./src/core/config.js ***!
@@ -332,6 +861,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _extend__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./extend */ "./src/core/global-api/extend.js");
 /* harmony import */ var _assets__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./assets */ "./src/core/global-api/assets.js");
 /* harmony import */ var shared_constants__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! shared/constants */ "./src/shared/constants.js");
+/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../util */ "./src/core/util/index.js");
+
 
 
 
@@ -350,6 +881,7 @@ function initGlobalAPI(SVue) {
   };
 
   Object.defineProperty(SVue, 'config', configDef);
+  SVue.nextTick = _util__WEBPACK_IMPORTED_MODULE_5__["nextTick"];
   SVue.options = Object.create(null);
   shared_constants__WEBPACK_IMPORTED_MODULE_4__["ASSET_TYPES"].forEach(function (type) {
     SVue.options[type + 's'] = Object.create(null);
@@ -559,7 +1091,11 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "lifecycleMixin", function() { return lifecycleMixin; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "mountComponent", function() { return mountComponent; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "callHook", function() { return callHook; });
-// 全局当前激活实例
+/* harmony import */ var _observer_watcher__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../observer/watcher */ "./src/core/observer/watcher.js");
+/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../util */ "./src/core/util/index.js");
+
+ // 全局当前激活实例
+
 var activeInstance = null; // export function setActiveInstance(vm) {
 //   const prevActiveInstance = activeInstance
 //   activeInstance = vm
@@ -609,16 +1145,22 @@ function mountComponent(vm, el) {
 
   var updateComponent = function updateComponent() {
     vm._update(vm._render());
-  }; // 模拟Watcher中getter的调用
+  }; // we set this to vm._watcher inside the watcher's constructor
+  // since the watcher's initial patch may call $forceUpdate (e.g. inside child
+  // component's mounted hook), which relies on vm._watcher being already defined
+  // eslint-disable-next-line
 
 
-  updateComponent.call(vm, vm);
-
-  if (vm._isMounted) {
-    callHook(vm, 'beforeUpdate');
-  } // manually mounted instance, call mounted on self
+  new _observer_watcher__WEBPACK_IMPORTED_MODULE_0__["default"](vm, updateComponent, _util__WEBPACK_IMPORTED_MODULE_1__["noop"], {
+    before: function before() {
+      if (vm._isMounted && !vm._isDestroyed) {
+        callHook(vm, 'beforeUpdate');
+      }
+    }
+  }, true
+  /* isRenderWatcher */
+  ); // manually mounted instance, call mounted on self
   // mounted is called for render-created child components in its inserted hook
-
 
   if (vm.$vnode == null) {
     vm._isMounted = true;
@@ -657,10 +1199,16 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "initRender", function() { return initRender; });
 /* harmony import */ var _vdom_create_element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../vdom/create-element */ "./src/core/vdom/create-element.js");
 /* harmony import */ var _vdom_vnode__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../vdom/vnode */ "./src/core/vdom/vnode.js");
+/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../util */ "./src/core/util/index.js");
+
 
  // SVue.prototype._render
 
 function renderMixin(SVue) {
+  SVue.prototype.$nextTick = function (fn) {
+    return Object(_util__WEBPACK_IMPORTED_MODULE_2__["nextTick"])(fn, this);
+  };
+
   SVue.prototype._render = function () {
     var vm = this;
     var _vm$$options = vm.$options,
@@ -709,6 +1257,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _observer_index__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../observer/index */ "./src/core/observer/index.js");
 
 function initState(vm) {
+  vm._watchers = [];
   var opts = vm.$options; // 初始化data
 
   if (opts.data) {
@@ -722,9 +1271,7 @@ function initData(vm) {
 
   Object.keys(data).forEach(function (key) {
     proxy(vm, '_data', key);
-  }); // eslint-disable-next-line
-
-  debugger; // observe data
+  }); // observe data
   // asRootData: 这步作为根数据，下面会递归observe进行对深层对象的绑定
 
   Object(_observer_index__WEBPACK_IMPORTED_MODULE_0__["observe"])(data, true
@@ -1143,11 +1690,341 @@ function dependArray(value) {
 
 /***/ }),
 
+/***/ "./src/core/observer/scheduler.js":
+/*!****************************************!*\
+  !*** ./src/core/observer/scheduler.js ***!
+  \****************************************/
+/*! exports provided: queueWatcher */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "queueWatcher", function() { return queueWatcher; });
+/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../util */ "./src/core/util/index.js");
+/* harmony import */ var _instance_lifecycle__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../instance/lifecycle */ "./src/core/instance/lifecycle.js");
+
+
+var queue = [];
+var activatedChildren = [];
+var has = {};
+var waiting = false;
+var flushing = false;
+var index = 0;
+/**
+ * Push a watcher into the watcher queue.
+ * Jobs with duplicate IDs will be skipped unless it's
+ * pushed when the queue is being flushed.
+ */
+
+function queueWatcher(watcher) {
+  var id = watcher.id;
+
+  if (has[id] == null) {
+    has[id] = true;
+
+    if (!flushing) {
+      queue.push(watcher);
+    } else {
+      // if already flushing, splice the watcher based on its id
+      // if already past its id, it will be run next immediately.
+      var i = queue.length - 1;
+
+      while (i > index && queue[i].id > watcher.id) {
+        i--;
+      }
+
+      queue.splice(i + 1, 0, watcher);
+    } // queue the flush
+
+
+    if (!waiting) {
+      waiting = true;
+      Object(_util__WEBPACK_IMPORTED_MODULE_0__["nextTick"])(flushSchedulerQueue);
+    }
+  }
+}
+/**
+ * Flush both queues and run the watchers.
+ */
+
+function flushSchedulerQueue() {
+  flushing = true;
+  var watcher, id; // Sort queue before flush.
+  // This ensures that:
+  // 1. Components are updated from parent to child. (because parent is always
+  //    created before the child)
+  // 2. A component's user watchers are run before its render watcher (because
+  //    user watchers are created before the render watcher)
+  // 3. If a component is destroyed during a parent component's watcher run,
+  //    its watchers can be skipped.
+
+  queue.sort(function (a, b) {
+    return a.id - b.id;
+  }); // do not cache length because more watchers might be pushed
+  // as we run existing watchers
+
+  for (index = 0; index < queue.length; index++) {
+    watcher = queue[index];
+
+    if (watcher.before) {
+      watcher.before();
+    }
+
+    id = watcher.id;
+    has[id] = null;
+    watcher.run();
+  } // keep copies of post queues before resetting state
+
+
+  var updatedQueue = queue.slice();
+  resetSchedulerState();
+  callUpdatedHooks(updatedQueue);
+}
+/**
+ * Reset the scheduler's state.
+ */
+
+
+function resetSchedulerState() {
+  index = queue.length = activatedChildren.length = 0;
+  has = {};
+  waiting = flushing = false;
+}
+
+function callUpdatedHooks(queue) {
+  var i = queue.length;
+
+  while (i--) {
+    var watcher = queue[i];
+    var vm = watcher.vm;
+
+    if (vm._watcher === watcher && vm._isMounted && !vm._isDestroyed) {
+      Object(_instance_lifecycle__WEBPACK_IMPORTED_MODULE_1__["callHook"])(vm, 'updated');
+    }
+  }
+}
+
+/***/ }),
+
+/***/ "./src/core/observer/watcher.js":
+/*!**************************************!*\
+  !*** ./src/core/observer/watcher.js ***!
+  \**************************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "default", function() { return Watcher; });
+/* harmony import */ var _util_index__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../util/index */ "./src/core/util/index.js");
+/* harmony import */ var _scheduler__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./scheduler */ "./src/core/observer/scheduler.js");
+/* harmony import */ var _dep__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./dep */ "./src/core/observer/dep.js");
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+
+
+
+var uid = 0;
+/**
+ * A watcher parses an expression, collects dependencies,
+ * and fires callback when the expression value changes.
+ * This is used for both the $watch() api and directives.
+ */
+
+var Watcher =
+/*#__PURE__*/
+function () {
+  function Watcher(vm, // Component,
+  expOrFn, // string | Function,
+  cb, // Function,
+  options, // ?Object,
+  isRenderWatcher // boolean
+  ) {
+    _classCallCheck(this, Watcher);
+
+    this.vm = vm;
+
+    if (isRenderWatcher) {
+      vm._watcher = this;
+    }
+
+    vm._watchers.push(this); // options
+
+
+    if (options) {
+      this.deep = !!options.deep;
+      this.user = !!options.user;
+      this.lazy = !!options.lazy;
+      this.sync = !!options.sync;
+      this.before = options.before;
+    } else {
+      this.deep = this.user = this.lazy = this.sync = false;
+    }
+
+    this.cb = cb;
+    this.id = ++uid; // uid for batching
+
+    this.active = true;
+    this.dirty = this.lazy; // for lazy watchers
+
+    this.deps = [];
+    this.newDeps = [];
+    this.depIds = new Set();
+    this.newDepIds = new Set(); // parse expression for getter
+
+    if (typeof expOrFn === 'function') {
+      this.getter = expOrFn;
+    }
+
+    this.value = this.get();
+  }
+  /**
+   * Evaluate the getter, and re-collect dependencies.
+   */
+
+
+  _createClass(Watcher, [{
+    key: "get",
+    value: function get() {
+      Object(_dep__WEBPACK_IMPORTED_MODULE_2__["pushTarget"])(this);
+      var value;
+      var vm = this.vm;
+
+      try {
+        value = this.getter.call(vm, vm);
+      } catch (e) {
+        if (this.user) {
+          console.error(e, 'getter for watcher');
+        } else {
+          throw e;
+        }
+      } finally {
+        Object(_dep__WEBPACK_IMPORTED_MODULE_2__["popTarget"])();
+        this.cleanupDeps();
+      }
+
+      return value;
+    }
+    /**
+     * Add a dependency to this directive.
+     */
+
+  }, {
+    key: "addDep",
+    value: function addDep(dep) {
+      var id = dep.id;
+
+      if (!this.newDepIds.has(id)) {
+        this.newDepIds.add(id);
+        this.newDeps.push(dep);
+
+        if (!this.depIds.has(id)) {
+          dep.addSub(this);
+        }
+      }
+    }
+    /**
+     * Clean up for dependency collection.
+     */
+
+  }, {
+    key: "cleanupDeps",
+    value: function cleanupDeps() {
+      var i = this.deps.length;
+
+      while (i--) {
+        var dep = this.deps[i];
+
+        if (!this.newDepIds.has(dep.id)) {
+          dep.removeSub(this);
+        }
+      }
+
+      var tmp = this.depIds;
+      this.depIds = this.newDepIds;
+      this.newDepIds = tmp;
+      this.newDepIds = Object.create(null);
+      tmp = this.deps;
+      this.deps = this.newDeps;
+      this.newDeps = tmp;
+      this.newDeps.length = 0;
+    }
+    /**
+     * Subscriber interface.
+     * Will be called when a dependency changes.
+     */
+
+  }, {
+    key: "update",
+    value: function update() {
+      /* istanbul ignore else */
+      if (this.lazy) {
+        this.dirty = true;
+      } else if (this.sync) {
+        this.run();
+      } else {
+        Object(_scheduler__WEBPACK_IMPORTED_MODULE_1__["queueWatcher"])(this);
+      }
+    }
+    /**
+     * Scheduler job interface.
+     * Will be called by the scheduler.
+     */
+
+  }, {
+    key: "run",
+    value: function run() {
+      if (this.active) {
+        var value = this.get();
+
+        if (value !== this.value || Object(_util_index__WEBPACK_IMPORTED_MODULE_0__["isObject"])(value)) {
+          // set new value
+          var oldValue = this.value;
+          this.value = value;
+
+          if (this.user) {
+            try {
+              this.cb.call(this.vm, value, oldValue);
+            } catch (e) {
+              console.error(e, 'callback for watcher');
+            }
+          } else {
+            this.cb.call(this.vm, value, oldValue);
+          }
+        }
+      }
+    }
+    /**
+     * Depend on all deps collected by this watcher.
+     */
+
+  }, {
+    key: "depend",
+    value: function depend() {
+      var i = this.deps.length;
+
+      while (i--) {
+        this.deps[i].depend();
+      }
+    }
+  }]);
+
+  return Watcher;
+}();
+
+
+
+/***/ }),
+
 /***/ "./src/core/util/index.js":
 /*!********************************!*\
   !*** ./src/core/util/index.js ***!
   \********************************/
-/*! exports provided: isPrimitive, hasOwn, extend, isObject, isPlainObject, makeMap, noop, no, identity, cached, camelize, capitalize, remove, def, mergeOptions, resolveAsset */
+/*! exports provided: mergeOptions, resolveAsset, isUsingMicroTask, nextTick, isPrimitive, hasOwn, extend, isObject, isPlainObject, makeMap, noop, no, identity, cached, camelize, capitalize, remove, def */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -1158,32 +2035,38 @@ __webpack_require__.r(__webpack_exports__);
 
 /* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "resolveAsset", function() { return _options__WEBPACK_IMPORTED_MODULE_0__["resolveAsset"]; });
 
-/* harmony import */ var shared_util__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! shared/util */ "./src/shared/util.js");
-/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "isPrimitive", function() { return shared_util__WEBPACK_IMPORTED_MODULE_1__["isPrimitive"]; });
+/* harmony import */ var _next_tick__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./next-tick */ "./src/core/util/next-tick.js");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "isUsingMicroTask", function() { return _next_tick__WEBPACK_IMPORTED_MODULE_1__["isUsingMicroTask"]; });
 
-/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "hasOwn", function() { return shared_util__WEBPACK_IMPORTED_MODULE_1__["hasOwn"]; });
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "nextTick", function() { return _next_tick__WEBPACK_IMPORTED_MODULE_1__["nextTick"]; });
 
-/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "extend", function() { return shared_util__WEBPACK_IMPORTED_MODULE_1__["extend"]; });
+/* harmony import */ var shared_util__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! shared/util */ "./src/shared/util.js");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "isPrimitive", function() { return shared_util__WEBPACK_IMPORTED_MODULE_2__["isPrimitive"]; });
 
-/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "isObject", function() { return shared_util__WEBPACK_IMPORTED_MODULE_1__["isObject"]; });
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "hasOwn", function() { return shared_util__WEBPACK_IMPORTED_MODULE_2__["hasOwn"]; });
 
-/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "isPlainObject", function() { return shared_util__WEBPACK_IMPORTED_MODULE_1__["isPlainObject"]; });
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "extend", function() { return shared_util__WEBPACK_IMPORTED_MODULE_2__["extend"]; });
 
-/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "makeMap", function() { return shared_util__WEBPACK_IMPORTED_MODULE_1__["makeMap"]; });
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "isObject", function() { return shared_util__WEBPACK_IMPORTED_MODULE_2__["isObject"]; });
 
-/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "noop", function() { return shared_util__WEBPACK_IMPORTED_MODULE_1__["noop"]; });
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "isPlainObject", function() { return shared_util__WEBPACK_IMPORTED_MODULE_2__["isPlainObject"]; });
 
-/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "no", function() { return shared_util__WEBPACK_IMPORTED_MODULE_1__["no"]; });
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "makeMap", function() { return shared_util__WEBPACK_IMPORTED_MODULE_2__["makeMap"]; });
 
-/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "identity", function() { return shared_util__WEBPACK_IMPORTED_MODULE_1__["identity"]; });
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "noop", function() { return shared_util__WEBPACK_IMPORTED_MODULE_2__["noop"]; });
 
-/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "cached", function() { return shared_util__WEBPACK_IMPORTED_MODULE_1__["cached"]; });
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "no", function() { return shared_util__WEBPACK_IMPORTED_MODULE_2__["no"]; });
 
-/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "camelize", function() { return shared_util__WEBPACK_IMPORTED_MODULE_1__["camelize"]; });
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "identity", function() { return shared_util__WEBPACK_IMPORTED_MODULE_2__["identity"]; });
 
-/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "capitalize", function() { return shared_util__WEBPACK_IMPORTED_MODULE_1__["capitalize"]; });
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "cached", function() { return shared_util__WEBPACK_IMPORTED_MODULE_2__["cached"]; });
 
-/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "remove", function() { return shared_util__WEBPACK_IMPORTED_MODULE_1__["remove"]; });
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "camelize", function() { return shared_util__WEBPACK_IMPORTED_MODULE_2__["camelize"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "capitalize", function() { return shared_util__WEBPACK_IMPORTED_MODULE_2__["capitalize"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "remove", function() { return shared_util__WEBPACK_IMPORTED_MODULE_2__["remove"]; });
+
 
 
 
@@ -1199,6 +2082,85 @@ function def(obj, key, val, enumerable) {
     configurable: true
   });
 }
+
+/***/ }),
+
+/***/ "./src/core/util/next-tick.js":
+/*!************************************!*\
+  !*** ./src/core/util/next-tick.js ***!
+  \************************************/
+/*! exports provided: isUsingMicroTask, nextTick */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* WEBPACK VAR INJECTION */(function(setImmediate) {/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isUsingMicroTask", function() { return isUsingMicroTask; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "nextTick", function() { return nextTick; });
+var isUsingMicroTask = false;
+var callbacks = [];
+var pending = false;
+
+function flushCallbacks() {
+  pending = false;
+  var copies = callbacks.slice(0);
+  callbacks.length = 0;
+
+  for (var i = 0; i < copies.length; i++) {
+    copies[i]();
+  }
+}
+
+var timerFunc;
+
+if (typeof Promise !== 'undefined') {
+  var p = Promise.resolve();
+
+  timerFunc = function timerFunc() {
+    p.then(flushCallbacks);
+  };
+
+  isUsingMicroTask = true;
+} else if (typeof setImmediate !== 'undefined') {
+  // Fallback to setImmediate.
+  // Techinically it leverages the (macro) task queue,
+  // but it is still a better choice than setTimeout.
+  timerFunc = function timerFunc() {
+    setImmediate(flushCallbacks);
+  };
+} else {
+  // Fallback to setTimeout.
+  timerFunc = function timerFunc() {
+    setTimeout(flushCallbacks, 0);
+  };
+}
+
+function nextTick(cb, ctx) {
+  var _resolve;
+
+  callbacks.push(function () {
+    if (cb) {
+      try {
+        cb.call(ctx);
+      } catch (e) {
+        console.error(e, ctx, 'nextTick');
+      }
+    } else if (_resolve) {
+      _resolve(ctx);
+    }
+  });
+
+  if (!pending) {
+    pending = true;
+    timerFunc();
+  }
+
+  if (!cb && typeof Promise !== 'undefined') {
+    return new Promise(function (resolve) {
+      _resolve = resolve;
+    });
+  }
+}
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../../node_modules/timers-browserify/main.js */ "./node_modules/timers-browserify/main.js").setImmediate))
 
 /***/ }),
 
@@ -2231,7 +3193,7 @@ function isUnknownElement(tag) {
 /*!*******************************!*\
   !*** ./src/web/util/index.js ***!
   \*******************************/
-/*! exports provided: query, isHTMLTag, isSVG, isReservedTag, isUnknownElement */
+/*! exports provided: isHTMLTag, isSVG, isReservedTag, isUnknownElement, query */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";

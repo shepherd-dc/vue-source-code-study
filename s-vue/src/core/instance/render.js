@@ -1,8 +1,13 @@
 import { createElement } from '../vdom/create-element'
 import VNode, { createEmptyVNode } from '../vdom/vnode'
+import { nextTick } from '../util'
 
 // SVue.prototype._render
 export function renderMixin (SVue) {
+  SVue.prototype.$nextTick = function (fn) {
+    return nextTick(fn, this)
+  }
+
   SVue.prototype._render = function () {
     const vm = this
     const { render, _parentVnode } = vm.$options

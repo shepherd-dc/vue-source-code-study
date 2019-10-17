@@ -3,6 +3,7 @@ import { initMixin } from './mixin'
 import { initExtend } from './extend'
 import { initAssetRegisters } from './assets'
 import { ASSET_TYPES } from 'shared/constants'
+import { nextTick } from '../util'
 
 export function initGlobalAPI (SVue) {
   // config
@@ -12,6 +13,8 @@ export function initGlobalAPI (SVue) {
     console.error('Do not replace the Vue.config object, set individual fields instead.')
   }
   Object.defineProperty(SVue, 'config', configDef)
+
+  SVue.nextTick = nextTick
 
   SVue.options = Object.create(null)
   ASSET_TYPES.forEach(type => {
