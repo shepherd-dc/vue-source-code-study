@@ -60,22 +60,24 @@
         }
       },
       created() {
-        this.foo.bar = 'new bar'
+        setTimeout(()=>{
+          this.msg = 'New msg'
+        }, 1500)
       },
-      mounted() {
-        console.log('SVue instance mounted')
-        this.$nextTick(()=>{
-          console.log(this.foo.bar)
-        })
+      async mounted() {
+        console.log('SVue instance mounted:', this.msg)
+        this.msg = "Mounted change"
+        await this.$nextTick()
+        console.log(this.msg)
       },
       render(h) {
         // 渲染dom保留标签
-        /* return h('div', {
+        return h('div', {
           attrs: { id: 'app'}
-        }, this.msg) */
+        }, this.msg)
 
         // 渲染组件
-        return h('hello')
+        // return h('hello')
       }
     })
     console.log(svue)

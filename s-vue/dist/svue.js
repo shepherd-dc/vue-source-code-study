@@ -1151,6 +1151,8 @@ function mountComponent(vm, el) {
   // eslint-disable-next-line
 
 
+  debugger; // eslint-disable-next-line
+
   new _observer_watcher__WEBPACK_IMPORTED_MODULE_0__["default"](vm, updateComponent, _util__WEBPACK_IMPORTED_MODULE_1__["noop"], {
     before: function before() {
       if (vm._isMounted && !vm._isDestroyed) {
@@ -1599,6 +1601,8 @@ shallow // boolean
     enumerable: true,
     configurable: true,
     get: function reactiveGetter() {
+      // eslint-disable-next-line
+      debugger;
       var value = getter ? getter.call(obj) : val;
 
       if (_dep__WEBPACK_IMPORTED_MODULE_3__["default"].target) {
@@ -1616,6 +1620,8 @@ shallow // boolean
       return value;
     },
     set: function reactiveSetter(newVal) {
+      // eslint-disable-next-line
+      debugger;
       var value = getter ? getter.call(obj) : val;
       /* eslint-disable no-self-compare */
 
@@ -1947,7 +1953,7 @@ function () {
       var tmp = this.depIds;
       this.depIds = this.newDepIds;
       this.newDepIds = tmp;
-      this.newDepIds = Object.create(null);
+      this.newDepIds.clear();
       tmp = this.deps;
       this.deps = this.newDeps;
       this.newDeps = tmp;

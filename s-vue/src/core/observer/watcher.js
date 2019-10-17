@@ -76,6 +76,7 @@ export default class Watcher {
    */
   addDep (dep) {
     const id = dep.id
+
     if (!this.newDepIds.has(id)) {
       this.newDepIds.add(id)
       this.newDeps.push(dep)
@@ -99,7 +100,7 @@ export default class Watcher {
     let tmp = this.depIds
     this.depIds = this.newDepIds
     this.newDepIds = tmp
-    this.newDepIds = Object.create(null)
+    this.newDepIds.clear()
     tmp = this.deps
     this.deps = this.newDeps
     this.newDeps = tmp
