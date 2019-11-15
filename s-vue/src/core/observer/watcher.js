@@ -35,7 +35,7 @@ export default class Watcher {
     this.cb = cb
     this.id = ++uid // uid for batching
     this.active = true
-    this.dirty = this.lazy // for lazy watchers
+    this.dirty = this.lazy // for lazy watchers(computed)
     this.deps = []
     this.newDeps = []
     this.depIds = new Set()
@@ -45,8 +45,7 @@ export default class Watcher {
     if (typeof expOrFn === 'function') {
       this.getter = expOrFn
     }
-
-    this.value = this.get()
+    this.value = this.lazy ? undefined : this.get()
   }
 
   /**
@@ -112,7 +111,6 @@ export default class Watcher {
    * Will be called when a dependency changes.
    */
   update () {
-    /* istanbul ignore else */
     if (this.lazy) {
       this.dirty = true
     } else if (this.sync) {
@@ -157,5 +155,14 @@ export default class Watcher {
     while (i--) {
       this.deps[i].depend()
     }
+  }
+
+  /**
+   * Evaluate the value of the watcher.
+   * This only gets called for lazy watchers.
+   */
+  evaluate () {
+    this.value = this.get()
+    this.dirty = false
   }
 }

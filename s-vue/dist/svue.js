@@ -1151,15 +1151,22 @@ function mountComponent(vm, el) {
   // eslint-disable-next-line
 
 
-  debugger; // eslint-disable-next-line
+  debugger; // 渲染watcher
+  // eslint-disable-next-line
 
-  new _observer_watcher__WEBPACK_IMPORTED_MODULE_0__["default"](vm, updateComponent, _util__WEBPACK_IMPORTED_MODULE_1__["noop"], {
+  new _observer_watcher__WEBPACK_IMPORTED_MODULE_0__["default"](vm, updateComponent,
+  /* this.getter */
+  _util__WEBPACK_IMPORTED_MODULE_1__["noop"],
+  /* this.cb */
+  {
     before: function before() {
       if (vm._isMounted && !vm._isDestroyed) {
         callHook(vm, 'beforeUpdate');
       }
     }
-  }, true
+  },
+  /* options.before */
+  true
   /* isRenderWatcher */
   ); // manually mounted instance, call mounted on self
   // mounted is called for render-created child components in its inserted hook
@@ -1250,13 +1257,27 @@ function initRender(vm) {
 /*!************************************!*\
   !*** ./src/core/instance/state.js ***!
   \************************************/
-/*! exports provided: initState */
+/*! exports provided: initState, defineComputed */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "initState", function() { return initState; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "defineComputed", function() { return defineComputed; });
 /* harmony import */ var _observer_index__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../observer/index */ "./src/core/observer/index.js");
+/* harmony import */ var _observer_watcher__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../observer/watcher */ "./src/core/observer/watcher.js");
+/* harmony import */ var _observer_dep__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../observer/dep */ "./src/core/observer/dep.js");
+/* harmony import */ var _util_index__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../util/index */ "./src/core/util/index.js");
+/*
+ * @Autor: Yang Yixia
+ * @Date: 2019-10-08 10:02:56
+ * @LastEditors: Yang Yixia
+ * @LastEditTime: 2019-11-18 11:11:15
+ * @Description:
+ */
+
+
+
 
 function initState(vm) {
   vm._watchers = [];
@@ -1264,6 +1285,11 @@ function initState(vm) {
 
   if (opts.data) {
     initData(vm);
+  } // 初始化computed
+
+
+  if (opts.computed) {
+    initComputed(vm, opts.computed);
   }
 }
 
@@ -1294,6 +1320,73 @@ function proxy(vm, sourcekey, key) {
       vm[sourcekey][key] = val;
     }
   });
+}
+
+var sharedPropertyDefinition = {
+  enumerable: true,
+  configurable: true,
+  get: _util_index__WEBPACK_IMPORTED_MODULE_3__["noop"],
+  set: _util_index__WEBPACK_IMPORTED_MODULE_3__["noop"]
+};
+var computedWatcherOptions = {
+  lazy: true
+};
+
+function initComputed(vm, computed) {
+  var watchers = vm._computedWatchers = Object.create(null);
+
+  for (var key in computed) {
+    var userDef = computed[key];
+    var getter = typeof userDef === 'function' ? userDef : userDef.get;
+
+    if (getter == null) {
+      console.error("Getter is missing for computed property \"".concat(key, "\"."));
+    } // create internal watcher for the computed property.
+    // computed watcher
+
+
+    watchers[key] = new _observer_watcher__WEBPACK_IMPORTED_MODULE_1__["default"](vm, getter || _util_index__WEBPACK_IMPORTED_MODULE_3__["noop"], _util_index__WEBPACK_IMPORTED_MODULE_3__["noop"], computedWatcherOptions); // component-defined computed properties are already defined on the
+    // component prototype. We only need to define computed properties defined
+    // at instantiation here.
+
+    if (!(key in vm)) {
+      defineComputed(vm, key, userDef);
+    }
+  }
+}
+
+function defineComputed(target, // any,
+key, // string,
+userDef // Object | Function
+) {
+  if (typeof userDef === 'function') {
+    sharedPropertyDefinition.get = createComputedGetter(key);
+    sharedPropertyDefinition.set = _util_index__WEBPACK_IMPORTED_MODULE_3__["noop"];
+  } else {
+    sharedPropertyDefinition.get = userDef.get ? createComputedGetter(key) : _util_index__WEBPACK_IMPORTED_MODULE_3__["noop"];
+    sharedPropertyDefinition.set = userDef.set || _util_index__WEBPACK_IMPORTED_MODULE_3__["noop"];
+  }
+
+  Object.defineProperty(target, key, sharedPropertyDefinition);
+}
+
+function createComputedGetter(key) {
+  return function computedGetter() {
+    var watcher = this._computedWatchers && this._computedWatchers[key];
+
+    if (watcher) {
+      if (watcher.dirty) {
+        // 求值: watcher -> this.get() -> this.value = this.getter.call(vm)
+        watcher.evaluate();
+      }
+
+      if (_observer_dep__WEBPACK_IMPORTED_MODULE_2__["default"].target) {
+        watcher.depend();
+      }
+
+      return watcher.value;
+    }
+  };
 }
 
 /***/ }),
@@ -1875,7 +1968,7 @@ function () {
     this.id = ++uid; // uid for batching
 
     this.active = true;
-    this.dirty = this.lazy; // for lazy watchers
+    this.dirty = this.lazy; // for lazy watchers(computed)
 
     this.deps = [];
     this.newDeps = [];
@@ -1886,7 +1979,7 @@ function () {
       this.getter = expOrFn;
     }
 
-    this.value = this.get();
+    this.value = this.lazy ? undefined : this.get();
   }
   /**
    * Evaluate the getter, and re-collect dependencies.
@@ -1967,7 +2060,6 @@ function () {
   }, {
     key: "update",
     value: function update() {
-      /* istanbul ignore else */
       if (this.lazy) {
         this.dirty = true;
       } else if (this.sync) {
@@ -2017,6 +2109,17 @@ function () {
         this.deps[i].depend();
       }
     }
+    /**
+     * Evaluate the value of the watcher.
+     * This only gets called for lazy watchers.
+     */
+
+  }, {
+    key: "evaluate",
+    value: function evaluate() {
+      this.value = this.get();
+      this.dirty = false;
+    }
   }]);
 
   return Watcher;
@@ -2030,7 +2133,7 @@ function () {
 /*!********************************!*\
   !*** ./src/core/util/index.js ***!
   \********************************/
-/*! exports provided: mergeOptions, resolveAsset, isUsingMicroTask, nextTick, isPrimitive, hasOwn, extend, isObject, isPlainObject, makeMap, noop, no, identity, cached, camelize, capitalize, remove, def */
+/*! exports provided: isPrimitive, hasOwn, extend, isObject, isPlainObject, makeMap, noop, no, identity, cached, camelize, capitalize, remove, def, mergeOptions, resolveAsset, isUsingMicroTask, nextTick */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -3199,7 +3302,7 @@ function isUnknownElement(tag) {
 /*!*******************************!*\
   !*** ./src/web/util/index.js ***!
   \*******************************/
-/*! exports provided: isHTMLTag, isSVG, isReservedTag, isUnknownElement, query */
+/*! exports provided: query, isHTMLTag, isSVG, isReservedTag, isUnknownElement */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";

@@ -65,14 +65,21 @@ export function mountComponent (vm, el) {
   // component's mounted hook), which relies on vm._watcher being already defined
   // eslint-disable-next-line
   debugger
+  // 渲染watcher
   // eslint-disable-next-line
-  new Watcher(vm, updateComponent, noop, {
-    before () {
-      if (vm._isMounted && !vm._isDestroyed) {
-        callHook(vm, 'beforeUpdate')
+  new Watcher(
+    vm,
+    updateComponent, /* this.getter */
+    noop, /* this.cb */
+    {
+      before () {
+        if (vm._isMounted && !vm._isDestroyed) {
+          callHook(vm, 'beforeUpdate')
+        }
       }
-    }
-  }, true /* isRenderWatcher */)
+    }, /* options.before */
+    true /* isRenderWatcher */
+  )
 
   // manually mounted instance, call mounted on self
   // mounted is called for render-created child components in its inserted hook

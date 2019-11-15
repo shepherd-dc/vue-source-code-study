@@ -1,3 +1,10 @@
+/*
+ * @Autor: Yang Yixia
+ * @Date: 2019-10-08 10:02:56
+ * @LastEditors: Yang Yixia
+ * @LastEditTime: 2019-11-15 10:58:29
+ * @Description:
+ */
 /* @flow */
 
 import type Watcher from './watcher'
@@ -21,6 +28,7 @@ export default class Dep {
   }
 
   addSub (sub: Watcher) {
+    debugger
     this.subs.push(sub)
   }
 

@@ -1,3 +1,10 @@
+/*
+ * @Autor: Yang Yixia
+ * @Date: 2019-10-08 10:02:56
+ * @LastEditors: Yang Yixia
+ * @LastEditTime: 2019-11-12 18:19:35
+ * @Description:
+ */
 /* @flow */
 
 import { ASSET_TYPES } from 'shared/constants'
@@ -49,6 +56,7 @@ export function initExtend (Vue: GlobalAPI) {
       initProps(Sub)
     }
     if (Sub.options.computed) {
+      debugger
       initComputed(Sub)
     }
 

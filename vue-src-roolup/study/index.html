@@ -12,12 +12,13 @@
   <script src="../dist/vue.js"></script>
 
   <div id="app">
-    <!-- <template id="app1">
+    <template id="app1">
       <div id="app">
-        <h1>{{ msg }}</h1>
-        <todos></todos>
+        <h1>{{ name }}</h1>
+        <button @click="change">change</button>
+        <!-- <todos></todos> -->
       </div>
-    </template> -->
+    </template>
 
     <!-- <template id="hello">
       <div>
@@ -68,19 +69,29 @@
       // components: {
       //   Todos
       // },
-      // template: '#app1',
-      render (h) {
-        return h('div', {
-          attrs: { id: 'app'}
-        }, [
-          h('h1',this.msg),
-          h(Todos),
-          // h('Todos')
-        ])
-      },
+      template: '#app1',
+      // render (h) {
+      //   return h('div', {
+      //     attrs: { id: 'app'}
+      //   }, [
+      //     h('h1',this.msg),
+      //     h(Todos),
+      //     // h('Todos')
+      //   ])
+      // },
       data () {
         return {
           msg: 'Hello Vue'
+        }
+      },
+      computed: {
+        name () {
+          return this.msg.split('').reverse().join('')
+        }
+      },
+      methods: {
+        change () {
+          this.msg = 'changed'
         }
       }
     }
@@ -88,11 +99,16 @@
     new Vue({
       el: '#app',
       render(h) {
-        //  return h('div', { attrs: { id: 'app'} }, 'msg')
+        //  return h('div', { attrs: { id: 'app'} }, this.test)
         // return h({template: '#hello'})
         // return h(Todos)
         // return h('todos')
         return h(App)
+      },
+      computed: {
+        test () {
+          return 'instantiation computed'
+        }
       }
     })
 

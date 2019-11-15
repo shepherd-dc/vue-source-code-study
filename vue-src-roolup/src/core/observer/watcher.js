@@ -90,6 +90,7 @@ export default class Watcher {
         )
       }
     }
+    debugger
     this.value = this.lazy
       ? undefined
       : this.get()
@@ -126,6 +127,7 @@ export default class Watcher {
    * Add a dependency to this directive.
    */
   addDep (dep: Dep) {
+    debugger
     const id = dep.id
     if (!this.newDepIds.has(id)) {
       this.newDepIds.add(id)
