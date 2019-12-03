@@ -118,7 +118,7 @@ export function defineReactive (
     configurable: true,
     get: function reactiveGetter () {
       // eslint-disable-next-line
-      debugger
+      // debugger
       const value = getter ? getter.call(obj) : val
       if (Dep.target) {
         dep.depend()
@@ -133,7 +133,7 @@ export function defineReactive (
     },
     set: function reactiveSetter (newVal) {
       // eslint-disable-next-line
-      debugger
+      // debugger
       const value = getter ? getter.call(obj) : val
       /* eslint-disable no-self-compare */
       if (newVal === value || (newVal !== newVal && value !== value)) {

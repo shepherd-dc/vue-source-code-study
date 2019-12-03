@@ -2,7 +2,7 @@
  * @Autor: Yang Yixia
  * @Date: 2019-10-08 10:02:56
  * @LastEditors: Yang Yixia
- * @LastEditTime: 2019-11-18 11:11:15
+ * @LastEditTime: 2019-12-03 14:33:55
  * @Description:
  */
 import { observe } from '../observer/index'
@@ -115,6 +115,7 @@ function createComputedGetter (key) {
         watcher.evaluate()
       }
       if (Dep.target) {
+        // 收集依赖(被render Watcher订阅): this.deps[i].depend() -> Dep.target.addDep(this)
         watcher.depend()
       }
       return watcher.value

@@ -791,6 +791,15 @@ function initAssetRegisters(SVue) {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "initExtend", function() { return initExtend; });
 /* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../util */ "./src/core/util/index.js");
+/* harmony import */ var _instance_state__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../instance/state */ "./src/core/instance/state.js");
+/*
+ * @Autor: Yang Yixia
+ * @Date: 2019-10-08 10:02:56
+ * @LastEditors: Yang Yixia
+ * @LastEditTime: 2019-12-03 14:31:55
+ * @Description:
+ */
+
 
 function initExtend(SVue) {
   /**
@@ -824,7 +833,12 @@ function initExtend(SVue) {
     Sub.prototype.constructor = Sub;
     Sub.cid = cid++;
     Sub.options = Object(_util__WEBPACK_IMPORTED_MODULE_0__["mergeOptions"])(Super.options, extendOptions);
-    Sub["super"] = Super; // allow further extension/mixin/plugin usage
+    Sub["super"] = Super; // 将computed初始化挂在组件原型上，便于多次使用该组件时共享
+
+    if (Sub.options.computed) {
+      initComputed(Sub);
+    } // allow further extension/mixin/plugin usage
+
 
     Sub.extend = Super.extend; // enable recursive self-lookup
 
@@ -842,6 +856,14 @@ function initExtend(SVue) {
     cachedCtors[SuperId] = Sub;
     return Sub;
   };
+}
+
+function initComputed(Comp) {
+  var computed = Comp.options.computed;
+
+  for (var key in computed) {
+    Object(_instance_state__WEBPACK_IMPORTED_MODULE_1__["defineComputed"])(Comp.prototype, key, computed[key]);
+  }
 }
 
 /***/ }),
@@ -1148,11 +1170,9 @@ function mountComponent(vm, el) {
   }; // we set this to vm._watcher inside the watcher's constructor
   // since the watcher's initial patch may call $forceUpdate (e.g. inside child
   // component's mounted hook), which relies on vm._watcher being already defined
+  // 渲染watcher
   // eslint-disable-next-line
 
-
-  debugger; // 渲染watcher
-  // eslint-disable-next-line
 
   new _observer_watcher__WEBPACK_IMPORTED_MODULE_0__["default"](vm, updateComponent,
   /* this.getter */
@@ -1272,7 +1292,7 @@ __webpack_require__.r(__webpack_exports__);
  * @Autor: Yang Yixia
  * @Date: 2019-10-08 10:02:56
  * @LastEditors: Yang Yixia
- * @LastEditTime: 2019-11-18 11:11:15
+ * @LastEditTime: 2019-12-03 14:33:55
  * @Description:
  */
 
@@ -1381,6 +1401,7 @@ function createComputedGetter(key) {
       }
 
       if (_observer_dep__WEBPACK_IMPORTED_MODULE_2__["default"].target) {
+        // 收集依赖(被render Watcher订阅): this.deps[i].depend() -> Dep.target.addDep(this)
         watcher.depend();
       }
 
@@ -1462,6 +1483,13 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
+/*
+ * @Autor: Yang Yixia
+ * @Date: 2019-10-16 17:42:13
+ * @LastEditors: Yang Yixia
+ * @LastEditTime: 2019-12-03 10:33:46
+ * @Description:
+ */
 
 
 var uid = 0;
@@ -1695,7 +1723,7 @@ shallow // boolean
     configurable: true,
     get: function reactiveGetter() {
       // eslint-disable-next-line
-      debugger;
+      // debugger
       var value = getter ? getter.call(obj) : val;
 
       if (_dep__WEBPACK_IMPORTED_MODULE_3__["default"].target) {
@@ -1714,7 +1742,7 @@ shallow // boolean
     },
     set: function reactiveSetter(newVal) {
       // eslint-disable-next-line
-      debugger;
+      // debugger
       var value = getter ? getter.call(obj) : val;
       /* eslint-disable no-self-compare */
 
@@ -1973,7 +2001,8 @@ function () {
     this.deps = [];
     this.newDeps = [];
     this.depIds = new Set();
-    this.newDepIds = new Set(); // parse expression for getter
+    this.newDepIds = new Set();
+    this.expression =  true ? expOrFn.toString() : undefined; // parse expression for getter
 
     if (typeof expOrFn === 'function') {
       this.getter = expOrFn;
@@ -1997,7 +2026,7 @@ function () {
         value = this.getter.call(vm, vm);
       } catch (e) {
         if (this.user) {
-          console.error(e, 'getter for watcher');
+          console.error(e, "getter for watcher \"".concat(this.expression, "\""));
         } else {
           throw e;
         }
@@ -2061,6 +2090,8 @@ function () {
     key: "update",
     value: function update() {
       if (this.lazy) {
+        // For computed watcher
+        // 把this.dirty置为true，重新渲染时会重新求值
         this.dirty = true;
       } else if (this.sync) {
         this.run();
@@ -2133,7 +2164,7 @@ function () {
 /*!********************************!*\
   !*** ./src/core/util/index.js ***!
   \********************************/
-/*! exports provided: isPrimitive, hasOwn, extend, isObject, isPlainObject, makeMap, noop, no, identity, cached, camelize, capitalize, remove, def, mergeOptions, resolveAsset, isUsingMicroTask, nextTick */
+/*! exports provided: mergeOptions, resolveAsset, isUsingMicroTask, nextTick, isPrimitive, hasOwn, extend, isObject, isPlainObject, makeMap, noop, no, identity, cached, camelize, capitalize, remove, def */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -3302,7 +3333,7 @@ function isUnknownElement(tag) {
 /*!*******************************!*\
   !*** ./src/web/util/index.js ***!
   \*******************************/
-/*! exports provided: query, isHTMLTag, isSVG, isReservedTag, isUnknownElement */
+/*! exports provided: isHTMLTag, isSVG, isReservedTag, isUnknownElement, query */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";

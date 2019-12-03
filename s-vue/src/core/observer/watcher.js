@@ -40,12 +40,17 @@ export default class Watcher {
     this.newDeps = []
     this.depIds = new Set()
     this.newDepIds = new Set()
+    this.expression = process.env.NODE_ENV !== 'production'
+      ? expOrFn.toString()
+      : ''
 
     // parse expression for getter
     if (typeof expOrFn === 'function') {
       this.getter = expOrFn
     }
-    this.value = this.lazy ? undefined : this.get()
+    this.value = this.lazy
+      ? undefined
+      : this.get()
   }
 
   /**
@@ -59,7 +64,7 @@ export default class Watcher {
       value = this.getter.call(vm, vm)
     } catch (e) {
       if (this.user) {
-        console.error(e, 'getter for watcher')
+        console.error(e, `getter for watcher "${this.expression}"`)
       } else {
         throw e
       }
@@ -112,6 +117,8 @@ export default class Watcher {
    */
   update () {
     if (this.lazy) {
+      // For computed watcher
+      // 把this.dirty置为true，重新渲染时会重新求值
       this.dirty = true
     } else if (this.sync) {
       this.run()

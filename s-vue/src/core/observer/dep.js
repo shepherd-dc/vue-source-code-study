@@ -1,3 +1,10 @@
+/*
+ * @Autor: Yang Yixia
+ * @Date: 2019-10-16 17:42:13
+ * @LastEditors: Yang Yixia
+ * @LastEditTime: 2019-12-03 10:33:46
+ * @Description:
+ */
 import { remove } from '../util/index'
 import config from '../config'
 

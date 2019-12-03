@@ -1,4 +1,13 @@
+/*
+ * @Autor: Yang Yixia
+ * @Date: 2019-10-08 10:02:56
+ * @LastEditors: Yang Yixia
+ * @LastEditTime: 2019-12-03 14:31:55
+ * @Description:
+ */
 import { mergeOptions, extend } from '../util'
+import { defineComputed } from '../instance/state'
+
 export function initExtend (SVue) {
   /**
    * Each instance constructor, including Vue, has a unique
@@ -34,6 +43,11 @@ export function initExtend (SVue) {
     )
     Sub.super = Super
 
+    // 将computed初始化挂在组件原型上，便于多次使用该组件时共享
+    if (Sub.options.computed) {
+      initComputed(Sub)
+    }
+
     // allow further extension/mixin/plugin usage
     Sub.extend = Super.extend
 
@@ -52,5 +66,12 @@ export function initExtend (SVue) {
     // cache constructor
     cachedCtors[SuperId] = Sub
     return Sub
+  }
+}
+
+function initComputed (Comp) {
+  const computed = Comp.options.computed
+  for (const key in computed) {
+    defineComputed(Comp.prototype, key, computed[key])
   }
 }

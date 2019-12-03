@@ -143,7 +143,6 @@ export function mountComponent (
   el: ?Element,
   hydrating?: boolean
 ): Component {
-  debugger
   vm.$el = el
   if (!vm.$options.render) {
     vm.$options.render = createEmptyVNode
@@ -188,7 +187,6 @@ export function mountComponent (
     }
   } else {
     updateComponent = () => {
-      debugger
       vm._update(vm._render(), hydrating)
     }
   }

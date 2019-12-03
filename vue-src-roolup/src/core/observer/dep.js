@@ -28,7 +28,6 @@ export default class Dep {
   }
 
   addSub (sub: Watcher) {
-    debugger
     this.subs.push(sub)
   }
 

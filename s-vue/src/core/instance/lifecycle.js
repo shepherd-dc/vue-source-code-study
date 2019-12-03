@@ -63,8 +63,7 @@ export function mountComponent (vm, el) {
   // we set this to vm._watcher inside the watcher's constructor
   // since the watcher's initial patch may call $forceUpdate (e.g. inside child
   // component's mounted hook), which relies on vm._watcher being already defined
-  // eslint-disable-next-line
-  debugger
+
   // 渲染watcher
   // eslint-disable-next-line
   new Watcher(

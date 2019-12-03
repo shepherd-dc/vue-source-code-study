@@ -56,7 +56,6 @@ export function initExtend (Vue: GlobalAPI) {
       initProps(Sub)
     }
     if (Sub.options.computed) {
-      debugger
       initComputed(Sub)
     }
 
