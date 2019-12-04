@@ -1,32 +1,69 @@
-/*
- * @Autor: Yang Yixia
- * @Date: 2019-10-08 10:02:56
- * @LastEditors: Yang Yixia
- * @LastEditTime: 2019-12-04 11:18:25
- * @Description:
- */
-import { observe } from '../observer/index'
+import { observe, toggleObserving, defineReactive } from '../observer/index'
 import Watcher from '../observer/watcher'
-import Dep from '../observer/dep'
+import Dep, { pushTarget, popTarget } from '../observer/dep'
 
 import { noop, isPlainObject } from '../util/index'
+
+const sharedPropertyDefinition = {
+  enumerable: true,
+  configurable: true,
+  get: noop,
+  set: noop
+}
+const computedWatcherOptions = { lazy: true }
+
+export function proxy (target, sourceKey, key) {
+  sharedPropertyDefinition.get = function proxyGetter () {
+    return this[sourceKey][key]
+  }
+  sharedPropertyDefinition.set = function proxySetter (val) {
+    this[sourceKey][key] = val
+  }
+  Object.defineProperty(target, key, sharedPropertyDefinition)
+}
 
 export function initState (vm) {
   vm._watchers = []
   const opts = vm.$options
-
+  // 初始化props
+  if (opts.props) initProps(vm, opts.props)
   // 初始化data
   if (opts.data) {
     initData(vm)
+  } else {
+    observe(vm._data = {}, true /* asRootData */)
   }
   // 初始化computed
-  if (opts.computed) {
-    initComputed(vm, opts.computed)
-  }
+  if (opts.computed) initComputed(vm, opts.computed)
   // 初始化watch
-  if (opts.watch) {
-    initWatch(vm, opts.watch)
+  if (opts.watch) initWatch(vm, opts.watch)
+}
+
+function initProps (vm, propsOptions) {
+  debugger
+  // const propsData = vm.$options.propsData || {}
+  const props = vm._props = {}
+  // cache prop keys so that future props updates can iterate using Array
+  // instead of dynamic object key enumeration.
+  const keys = vm.$options._propKeys = []
+  const isRoot = !vm.$parent
+  // root instance props should be converted
+  if (!isRoot) {
+    toggleObserving(false)
   }
+  for (const key in propsOptions) {
+    keys.push(key)
+    // const value = validateProp(key, propsOptions, propsData, vm)
+    const value = propsOptions[key]
+    defineReactive(props, key, value)
+    // static props are already proxied on the component's prototype
+    // during Vue.extend(). We only need to proxy props defined at
+    // instantiation here.
+    if (!(key in vm)) {
+      proxy(vm, '_props', key)
+    }
+  }
+  toggleObserving(true)
 }
 
 function initData (vm) {
@@ -43,27 +80,17 @@ function initData (vm) {
 }
 
 function getData (data, vm) {
-  return data.call(vm, vm)
+  // #7573 disable dep collection when invoking data getters
+  pushTarget()
+  try {
+    return data.call(vm, vm)
+  } catch (e) {
+    console.error(e, vm, 'data()')
+    return {}
+  } finally {
+    popTarget()
+  }
 }
-
-function proxy (vm, sourcekey, key) {
-  Object.defineProperty(vm, key, {
-    get () {
-      return vm[sourcekey][key]
-    },
-    set (val) {
-      vm[sourcekey][key] = val
-    }
-  })
-}
-
-const sharedPropertyDefinition = {
-  enumerable: true,
-  configurable: true,
-  get: noop,
-  set: noop
-}
-const computedWatcherOptions = { lazy: true }
 
 function initComputed (vm, computed) {
   const watchers = vm._computedWatchers = Object.create(null)

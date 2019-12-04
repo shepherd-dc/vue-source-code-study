@@ -792,13 +792,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "initExtend", function() { return initExtend; });
 /* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../util */ "./src/core/util/index.js");
 /* harmony import */ var _instance_state__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../instance/state */ "./src/core/instance/state.js");
-/*
- * @Autor: Yang Yixia
- * @Date: 2019-10-08 10:02:56
- * @LastEditors: Yang Yixia
- * @LastEditTime: 2019-12-03 14:31:55
- * @Description:
- */
 
 
 function initExtend(SVue) {
@@ -833,14 +826,23 @@ function initExtend(SVue) {
     Sub.prototype.constructor = Sub;
     Sub.cid = cid++;
     Sub.options = Object(_util__WEBPACK_IMPORTED_MODULE_0__["mergeOptions"])(Super.options, extendOptions);
-    Sub["super"] = Super; // 将computed初始化挂在组件原型上，便于多次使用该组件时共享
+    Sub["super"] = Super; // For props and computed properties, we define the proxy getters on
+    // the Vue instances at extension time, on the extended prototype. This
+    // avoids Object.defineProperty calls for each instance created.
+    // 将props和computed初始化挂在组件原型上，便于多次使用该组件时共享
+
+    if (Sub.options.props) {
+      initProps(Sub);
+    }
 
     if (Sub.options.computed) {
       initComputed(Sub);
     } // allow further extension/mixin/plugin usage
 
 
-    Sub.extend = Super.extend; // enable recursive self-lookup
+    Sub.extend = Super.extend;
+    Sub.mixin = Super.mixin;
+    Sub.use = Super.use; // enable recursive self-lookup
 
     if (name) {
       Sub.options.components[name] = Sub;
@@ -856,6 +858,15 @@ function initExtend(SVue) {
     cachedCtors[SuperId] = Sub;
     return Sub;
   };
+}
+
+function initProps(Comp) {
+  debugger;
+  var props = Comp.options.props;
+
+  for (var key in props) {
+    Object(_instance_state__WEBPACK_IMPORTED_MODULE_1__["proxy"])(Comp.prototype, '_props', key);
+  }
 }
 
 function initComputed(Comp) {
@@ -1282,11 +1293,12 @@ function initRender(vm) {
 /*!************************************!*\
   !*** ./src/core/instance/state.js ***!
   \************************************/
-/*! exports provided: initState, defineComputed, stateMixin */
+/*! exports provided: proxy, initState, defineComputed, stateMixin */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "proxy", function() { return proxy; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "initState", function() { return initState; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "defineComputed", function() { return defineComputed; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "stateMixin", function() { return stateMixin; });
@@ -1294,34 +1306,77 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _observer_watcher__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../observer/watcher */ "./src/core/observer/watcher.js");
 /* harmony import */ var _observer_dep__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../observer/dep */ "./src/core/observer/dep.js");
 /* harmony import */ var _util_index__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../util/index */ "./src/core/util/index.js");
-/*
- * @Autor: Yang Yixia
- * @Date: 2019-10-08 10:02:56
- * @LastEditors: Yang Yixia
- * @LastEditTime: 2019-12-04 11:18:25
- * @Description:
- */
 
 
 
 
+var sharedPropertyDefinition = {
+  enumerable: true,
+  configurable: true,
+  get: _util_index__WEBPACK_IMPORTED_MODULE_3__["noop"],
+  set: _util_index__WEBPACK_IMPORTED_MODULE_3__["noop"]
+};
+var computedWatcherOptions = {
+  lazy: true
+};
+function proxy(target, sourceKey, key) {
+  sharedPropertyDefinition.get = function proxyGetter() {
+    return this[sourceKey][key];
+  };
+
+  sharedPropertyDefinition.set = function proxySetter(val) {
+    this[sourceKey][key] = val;
+  };
+
+  Object.defineProperty(target, key, sharedPropertyDefinition);
+}
 function initState(vm) {
   vm._watchers = [];
-  var opts = vm.$options; // 初始化data
+  var opts = vm.$options; // 初始化props
+
+  if (opts.props) initProps(vm, opts.props); // 初始化data
 
   if (opts.data) {
     initData(vm);
+  } else {
+    Object(_observer_index__WEBPACK_IMPORTED_MODULE_0__["observe"])(vm._data = {}, true
+    /* asRootData */
+    );
   } // 初始化computed
 
 
-  if (opts.computed) {
-    initComputed(vm, opts.computed);
-  } // 初始化watch
+  if (opts.computed) initComputed(vm, opts.computed); // 初始化watch
 
+  if (opts.watch) initWatch(vm, opts.watch);
+}
 
-  if (opts.watch) {
-    initWatch(vm, opts.watch);
+function initProps(vm, propsOptions) {
+  debugger; // const propsData = vm.$options.propsData || {}
+
+  var props = vm._props = {}; // cache prop keys so that future props updates can iterate using Array
+  // instead of dynamic object key enumeration.
+
+  var keys = vm.$options._propKeys = [];
+  var isRoot = !vm.$parent; // root instance props should be converted
+
+  if (!isRoot) {
+    Object(_observer_index__WEBPACK_IMPORTED_MODULE_0__["toggleObserving"])(false);
   }
+
+  for (var key in propsOptions) {
+    keys.push(key); // const value = validateProp(key, propsOptions, propsData, vm)
+
+    var value = propsOptions[key];
+    Object(_observer_index__WEBPACK_IMPORTED_MODULE_0__["defineReactive"])(props, key, value); // static props are already proxied on the component's prototype
+    // during Vue.extend(). We only need to proxy props defined at
+    // instantiation here.
+
+    if (!(key in vm)) {
+      proxy(vm, '_props', key);
+    }
+  }
+
+  Object(_observer_index__WEBPACK_IMPORTED_MODULE_0__["toggleObserving"])(true);
 }
 
 function initData(vm) {
@@ -1339,29 +1394,18 @@ function initData(vm) {
 }
 
 function getData(data, vm) {
-  return data.call(vm, vm);
-}
+  // #7573 disable dep collection when invoking data getters
+  Object(_observer_dep__WEBPACK_IMPORTED_MODULE_2__["pushTarget"])();
 
-function proxy(vm, sourcekey, key) {
-  Object.defineProperty(vm, key, {
-    get: function get() {
-      return vm[sourcekey][key];
-    },
-    set: function set(val) {
-      vm[sourcekey][key] = val;
-    }
-  });
+  try {
+    return data.call(vm, vm);
+  } catch (e) {
+    console.error(e, vm, 'data()');
+    return {};
+  } finally {
+    Object(_observer_dep__WEBPACK_IMPORTED_MODULE_2__["popTarget"])();
+  }
 }
-
-var sharedPropertyDefinition = {
-  enumerable: true,
-  configurable: true,
-  get: _util_index__WEBPACK_IMPORTED_MODULE_3__["noop"],
-  set: _util_index__WEBPACK_IMPORTED_MODULE_3__["noop"]
-};
-var computedWatcherOptions = {
-  lazy: true
-};
 
 function initComputed(vm, computed) {
   var watchers = vm._computedWatchers = Object.create(null);
@@ -1572,13 +1616,6 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
-/*
- * @Autor: Yang Yixia
- * @Date: 2019-10-16 17:42:13
- * @LastEditors: Yang Yixia
- * @LastEditTime: 2019-12-04 11:15:38
- * @Description:
- */
 
 
 var uid = 0;
@@ -2356,7 +2393,7 @@ function () {
 /*!********************************!*\
   !*** ./src/core/util/index.js ***!
   \********************************/
-/*! exports provided: mergeOptions, resolveAsset, isUsingMicroTask, nextTick, unicodeRegExp, def, parsePath, isPrimitive, hasOwn, extend, isObject, isPlainObject, makeMap, noop, no, identity, cached, camelize, capitalize, remove */
+/*! exports provided: isPrimitive, hasOwn, extend, isObject, isPlainObject, makeMap, noop, no, identity, cached, camelize, capitalize, remove, mergeOptions, resolveAsset, isUsingMicroTask, nextTick, unicodeRegExp, def, parsePath */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -3573,7 +3610,7 @@ function isUnknownElement(tag) {
 /*!*******************************!*\
   !*** ./src/web/util/index.js ***!
   \*******************************/
-/*! exports provided: isHTMLTag, isSVG, isReservedTag, isUnknownElement, query */
+/*! exports provided: query, isHTMLTag, isSVG, isReservedTag, isUnknownElement */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";

@@ -1,12 +1,5 @@
-/*
- * @Autor: Yang Yixia
- * @Date: 2019-10-08 10:02:56
- * @LastEditors: Yang Yixia
- * @LastEditTime: 2019-12-03 14:31:55
- * @Description:
- */
 import { mergeOptions, extend } from '../util'
-import { defineComputed } from '../instance/state'
+import { defineComputed, proxy } from '../instance/state'
 
 export function initExtend (SVue) {
   /**
@@ -43,13 +36,21 @@ export function initExtend (SVue) {
     )
     Sub.super = Super
 
-    // 将computed初始化挂在组件原型上，便于多次使用该组件时共享
+    // For props and computed properties, we define the proxy getters on
+    // the Vue instances at extension time, on the extended prototype. This
+    // avoids Object.defineProperty calls for each instance created.
+    // 将props和computed初始化挂在组件原型上，便于多次使用该组件时共享
+    if (Sub.options.props) {
+      initProps(Sub)
+    }
     if (Sub.options.computed) {
       initComputed(Sub)
     }
 
     // allow further extension/mixin/plugin usage
     Sub.extend = Super.extend
+    Sub.mixin = Super.mixin
+    Sub.use = Super.use
 
     // enable recursive self-lookup
     if (name) {
@@ -66,6 +67,14 @@ export function initExtend (SVue) {
     // cache constructor
     cachedCtors[SuperId] = Sub
     return Sub
+  }
+}
+
+function initProps (Comp) {
+  debugger
+  const props = Comp.options.props
+  for (const key in props) {
+    proxy(Comp.prototype, '_props', key)
   }
 }
 
