@@ -1,6 +1,7 @@
-import { isObject } from '../util/index'
+import { isObject, remove, noop, parsePath } from '../util/index'
 import { queueWatcher } from './scheduler'
 import { pushTarget, popTarget } from './dep'
+import { traverse } from './traverse'
 
 let uid = 0
 
@@ -47,7 +48,20 @@ export default class Watcher {
     // parse expression for getter
     if (typeof expOrFn === 'function') {
       this.getter = expOrFn
+    } else {
+      // For user Watcher
+      this.getter = parsePath(expOrFn)
+      if (!this.getter) {
+        this.getter = noop
+        console.error(
+          `Failed watching path: "${expOrFn}" ` +
+          'Watcher only accepts simple dot-delimited paths. ' +
+          'For full control, use a function instead.',
+          vm
+        )
+      }
     }
+
     this.value = this.lazy
       ? undefined
       : this.get()
@@ -69,6 +83,11 @@ export default class Watcher {
         throw e
       }
     } finally {
+      // "touch" every property so they are all tracked as
+      // dependencies for deep watching
+      if (this.deep) {
+        traverse(value)
+      }
       popTarget()
       this.cleanupDeps()
     }
@@ -171,5 +190,24 @@ export default class Watcher {
   evaluate () {
     this.value = this.get()
     this.dirty = false
+  }
+
+  /**
+   * Remove self from all dependencies' subscriber list.
+   */
+  teardown () {
+    if (this.active) {
+      // remove self from vm's watcher list
+      // this is a somewhat expensive operation so we skip it
+      // if the vm is being destroyed.
+      if (!this.vm._isBeingDestroyed) {
+        remove(this.vm._watchers, this)
+      }
+      let i = this.deps.length
+      while (i--) {
+        this.deps[i].removeSub(this)
+      }
+      this.active = false
+    }
   }
 }

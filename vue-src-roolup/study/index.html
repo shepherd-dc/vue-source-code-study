@@ -14,7 +14,7 @@
   <div id="app">
     <template id="app1">
       <div id="app">
-        <h1>{{ name }}</h1>
+        <h1>{{ msg }}</h1>
         <button @click="change">change</button>
         <!-- <todos></todos> -->
       </div>
@@ -85,13 +85,28 @@
         }
       },
       computed: {
-        name () {
-          return this.msg.split('').reverse().join('')
-        }
+        // name () {
+        //   return this.msg.split('').reverse().join('')
+        // }
       },
       methods: {
         change () {
           this.msg = 'changed'
+        }
+      },
+      watch: {
+        // name (newVal, oldVal) {
+        //   console.log('name:' + newVal + ',' + oldVal)
+        // },
+        // msg (newVal, oldVal) {
+        //   console.log('msg:' + newVal + ',' + oldVal)
+        // },
+        msg: {
+          immediate: true,
+          deep: true,
+          handler (newVal, oldVal) {
+            console.log('msg:' + newVal + ',' + oldVal)
+          }
         }
       }
     }
@@ -105,11 +120,11 @@
         // return h('todos')
         return h(App)
       },
-      computed: {
-        test () {
-          return 'instantiation computed'
-        }
-      }
+      // computed: {
+      //   test () {
+      //     return 'instantiation computed'
+      //   }
+      // }
     })
 
   </script>

@@ -56,9 +56,14 @@
         }, 1500)
         console.log('Hello component mounted')
       },
+      watch: {
+        hi (newVal) {
+          console.log(newVal)
+        }
+      },
       render (h) {
         return h('div', [
-          // h('h3', this.hi),
+          h('h3', this.hi),
           h('h4', this.compu),
           // h('Child')
         ])

@@ -57,6 +57,7 @@ export function initState (vm: Component) {
   }
   if (opts.computed) initComputed(vm, opts.computed)
   if (opts.watch && opts.watch !== nativeWatch) {
+    debugger
     initWatch(vm, opts.watch)
   }
 }

@@ -966,8 +966,10 @@ Object(_global_api_index__WEBPACK_IMPORTED_MODULE_1__["initGlobalAPI"])(_instanc
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _init__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./init */ "./src/core/instance/init.js");
-/* harmony import */ var _lifecycle__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./lifecycle */ "./src/core/instance/lifecycle.js");
-/* harmony import */ var _render__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./render */ "./src/core/instance/render.js");
+/* harmony import */ var _state__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./state */ "./src/core/instance/state.js");
+/* harmony import */ var _lifecycle__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./lifecycle */ "./src/core/instance/lifecycle.js");
+/* harmony import */ var _render__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./render */ "./src/core/instance/render.js");
+
 
 
 
@@ -977,8 +979,9 @@ function SVue(options) {
 }
 
 Object(_init__WEBPACK_IMPORTED_MODULE_0__["initMixin"])(SVue);
-Object(_lifecycle__WEBPACK_IMPORTED_MODULE_1__["lifecycleMixin"])(SVue);
-Object(_render__WEBPACK_IMPORTED_MODULE_2__["renderMixin"])(SVue);
+Object(_state__WEBPACK_IMPORTED_MODULE_1__["stateMixin"])(SVue);
+Object(_lifecycle__WEBPACK_IMPORTED_MODULE_2__["lifecycleMixin"])(SVue);
+Object(_render__WEBPACK_IMPORTED_MODULE_3__["renderMixin"])(SVue);
 /* harmony default export */ __webpack_exports__["default"] = (SVue);
 
 /***/ }),
@@ -1019,15 +1022,17 @@ function initMixin(SVue) {
       initInternalComponent(vm, options);
     } else {
       vm.$options = Object(_util__WEBPACK_IMPORTED_MODULE_3__["mergeOptions"])(resolveConstructorOptions(vm.constructor), options || {}, vm);
-    } // 一系列初始化
+    } // expose real self
 
+
+    vm._self = vm; // 一系列初始化
 
     Object(_lifecycle__WEBPACK_IMPORTED_MODULE_2__["initLifecycle"])(vm); // 初始化生命周期
 
     Object(_render__WEBPACK_IMPORTED_MODULE_1__["initRender"])(vm); // 初始化render --> vm.$createElement
 
     Object(_lifecycle__WEBPACK_IMPORTED_MODULE_2__["callHook"])(vm, 'beforeCreate');
-    Object(_state__WEBPACK_IMPORTED_MODULE_0__["initState"])(vm); // 初始化状态：data
+    Object(_state__WEBPACK_IMPORTED_MODULE_0__["initState"])(vm); // 初始化状态：data, computed, watch...
 
     Object(_lifecycle__WEBPACK_IMPORTED_MODULE_2__["callHook"])(vm, 'created'); // new Vue()时如果传了el自动$mount
 
@@ -1277,13 +1282,14 @@ function initRender(vm) {
 /*!************************************!*\
   !*** ./src/core/instance/state.js ***!
   \************************************/
-/*! exports provided: initState, defineComputed */
+/*! exports provided: initState, defineComputed, stateMixin */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "initState", function() { return initState; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "defineComputed", function() { return defineComputed; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "stateMixin", function() { return stateMixin; });
 /* harmony import */ var _observer_index__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../observer/index */ "./src/core/observer/index.js");
 /* harmony import */ var _observer_watcher__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../observer/watcher */ "./src/core/observer/watcher.js");
 /* harmony import */ var _observer_dep__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../observer/dep */ "./src/core/observer/dep.js");
@@ -1292,7 +1298,7 @@ __webpack_require__.r(__webpack_exports__);
  * @Autor: Yang Yixia
  * @Date: 2019-10-08 10:02:56
  * @LastEditors: Yang Yixia
- * @LastEditTime: 2019-12-03 14:33:55
+ * @LastEditTime: 2019-12-04 11:18:25
  * @Description:
  */
 
@@ -1310,6 +1316,11 @@ function initState(vm) {
 
   if (opts.computed) {
     initComputed(vm, opts.computed);
+  } // 初始化watch
+
+
+  if (opts.watch) {
+    initWatch(vm, opts.watch);
   }
 }
 
@@ -1410,6 +1421,84 @@ function createComputedGetter(key) {
   };
 }
 
+function initWatch(vm, watch) {
+  for (var key in watch) {
+    var handler = watch[key];
+
+    if (Array.isArray(handler)) {
+      for (var i = 0; i < handler.length; i++) {
+        createWatcher(vm, key, handler[i]);
+      }
+    } else {
+      createWatcher(vm, key, handler);
+    }
+  }
+}
+
+function createWatcher(vm, // Component,
+expOrFn, // string | Function,
+handler, // any,
+options // Object
+) {
+  if (Object(_util_index__WEBPACK_IMPORTED_MODULE_3__["isPlainObject"])(handler)) {
+    options = handler;
+    handler = handler.handler;
+  }
+
+  if (typeof handler === 'string') {
+    handler = vm[handler];
+  }
+
+  return vm.$watch(expOrFn, handler, options);
+}
+
+function stateMixin(Vue) {
+  // flow somehow has problems with directly declared definition object
+  // when using Object.defineProperty, so we have to procedurally build up
+  // the object here.
+  var dataDef = {};
+
+  dataDef.get = function () {
+    return this._data;
+  };
+
+  var propsDef = {};
+
+  propsDef.get = function () {
+    return this._props;
+  };
+
+  Object.defineProperty(Vue.prototype, '$data', dataDef);
+  Object.defineProperty(Vue.prototype, '$props', propsDef);
+
+  Vue.prototype.$watch = function (expOrFn, // string | Function,
+  cb, // any,
+  options // Object
+  ) {
+    var vm = this;
+
+    if (Object(_util_index__WEBPACK_IMPORTED_MODULE_3__["isPlainObject"])(cb)) {
+      return createWatcher(vm, expOrFn, cb, options);
+    }
+
+    options = options || {};
+    options.user = true;
+    var watcher = new _observer_watcher__WEBPACK_IMPORTED_MODULE_1__["default"](vm, expOrFn, cb, options);
+
+    if (options.immediate) {
+      try {
+        cb.call(vm, watcher.value);
+      } catch (error) {
+        console.error(error, vm, "callback for immediate watcher \"".concat(watcher.expression, "\""));
+      }
+    }
+
+    return function unwatchFn() {
+      watcher.teardown();
+    };
+  };
+}
+
 /***/ }),
 
 /***/ "./src/core/observer/array.js":
@@ -1487,7 +1576,7 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
  * @Autor: Yang Yixia
  * @Date: 2019-10-16 17:42:13
  * @LastEditors: Yang Yixia
- * @LastEditTime: 2019-12-03 10:33:46
+ * @LastEditTime: 2019-12-04 11:15:38
  * @Description:
  */
 
@@ -1933,6 +2022,69 @@ function callUpdatedHooks(queue) {
 
 /***/ }),
 
+/***/ "./src/core/observer/traverse.js":
+/*!***************************************!*\
+  !*** ./src/core/observer/traverse.js ***!
+  \***************************************/
+/*! exports provided: traverse */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "traverse", function() { return traverse; });
+/* harmony import */ var _vdom_vnode__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../vdom/vnode */ "./src/core/vdom/vnode.js");
+/* harmony import */ var _util_index__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../util/index */ "./src/core/util/index.js");
+
+
+var seenObjects = new Set();
+/**
+ * Recursively traverse an object to evoke all converted
+ * getters, so that every nested property inside the object
+ * is collected as a "deep" dependency.
+ */
+
+function traverse(val) {
+  _traverse(val, seenObjects);
+
+  seenObjects.clear();
+}
+
+function _traverse(val, seen) {
+  var i, keys;
+  var isA = Array.isArray(val);
+
+  if (!isA && !Object(_util_index__WEBPACK_IMPORTED_MODULE_1__["isObject"])(val) || Object.isFrozen(val) || val instanceof _vdom_vnode__WEBPACK_IMPORTED_MODULE_0__["default"]) {
+    return;
+  }
+
+  if (val.__ob__) {
+    var depId = val.__ob__.dep.id;
+
+    if (seen.has(depId)) {
+      return;
+    }
+
+    seen.add(depId);
+  }
+
+  if (isA) {
+    i = val.length;
+
+    while (i--) {
+      _traverse(val[i], seen);
+    }
+  } else {
+    keys = Object.keys(val);
+    i = keys.length;
+
+    while (i--) {
+      _traverse(val[keys[i]], seen);
+    }
+  }
+}
+
+/***/ }),
+
 /***/ "./src/core/observer/watcher.js":
 /*!**************************************!*\
   !*** ./src/core/observer/watcher.js ***!
@@ -1946,11 +2098,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _util_index__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../util/index */ "./src/core/util/index.js");
 /* harmony import */ var _scheduler__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./scheduler */ "./src/core/observer/scheduler.js");
 /* harmony import */ var _dep__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./dep */ "./src/core/observer/dep.js");
+/* harmony import */ var _traverse__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./traverse */ "./src/core/observer/traverse.js");
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
 
 
 
@@ -2006,6 +2160,14 @@ function () {
 
     if (typeof expOrFn === 'function') {
       this.getter = expOrFn;
+    } else {
+      // For user Watcher
+      this.getter = Object(_util_index__WEBPACK_IMPORTED_MODULE_0__["parsePath"])(expOrFn);
+
+      if (!this.getter) {
+        this.getter = _util_index__WEBPACK_IMPORTED_MODULE_0__["noop"];
+        console.error("Failed watching path: \"".concat(expOrFn, "\" ") + 'Watcher only accepts simple dot-delimited paths. ' + 'For full control, use a function instead.', vm);
+      }
     }
 
     this.value = this.lazy ? undefined : this.get();
@@ -2031,6 +2193,12 @@ function () {
           throw e;
         }
       } finally {
+        // "touch" every property so they are all tracked as
+        // dependencies for deep watching
+        if (this.deep) {
+          Object(_traverse__WEBPACK_IMPORTED_MODULE_3__["traverse"])(value);
+        }
+
         Object(_dep__WEBPACK_IMPORTED_MODULE_2__["popTarget"])();
         this.cleanupDeps();
       }
@@ -2151,6 +2319,30 @@ function () {
       this.value = this.get();
       this.dirty = false;
     }
+    /**
+     * Remove self from all dependencies' subscriber list.
+     */
+
+  }, {
+    key: "teardown",
+    value: function teardown() {
+      if (this.active) {
+        // remove self from vm's watcher list
+        // this is a somewhat expensive operation so we skip it
+        // if the vm is being destroyed.
+        if (!this.vm._isBeingDestroyed) {
+          Object(_util_index__WEBPACK_IMPORTED_MODULE_0__["remove"])(this.vm._watchers, this);
+        }
+
+        var i = this.deps.length;
+
+        while (i--) {
+          this.deps[i].removeSub(this);
+        }
+
+        this.active = false;
+      }
+    }
   }]);
 
   return Watcher;
@@ -2164,12 +2356,11 @@ function () {
 /*!********************************!*\
   !*** ./src/core/util/index.js ***!
   \********************************/
-/*! exports provided: mergeOptions, resolveAsset, isUsingMicroTask, nextTick, isPrimitive, hasOwn, extend, isObject, isPlainObject, makeMap, noop, no, identity, cached, camelize, capitalize, remove, def */
+/*! exports provided: mergeOptions, resolveAsset, isUsingMicroTask, nextTick, unicodeRegExp, def, parsePath, isPrimitive, hasOwn, extend, isObject, isPlainObject, makeMap, noop, no, identity, cached, camelize, capitalize, remove */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "def", function() { return def; });
 /* harmony import */ var _options__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./options */ "./src/core/util/options.js");
 /* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "mergeOptions", function() { return _options__WEBPACK_IMPORTED_MODULE_0__["mergeOptions"]; });
 
@@ -2180,36 +2371,65 @@ __webpack_require__.r(__webpack_exports__);
 
 /* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "nextTick", function() { return _next_tick__WEBPACK_IMPORTED_MODULE_1__["nextTick"]; });
 
-/* harmony import */ var shared_util__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! shared/util */ "./src/shared/util.js");
-/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "isPrimitive", function() { return shared_util__WEBPACK_IMPORTED_MODULE_2__["isPrimitive"]; });
+/* harmony import */ var _lang__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./lang */ "./src/core/util/lang.js");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "unicodeRegExp", function() { return _lang__WEBPACK_IMPORTED_MODULE_2__["unicodeRegExp"]; });
 
-/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "hasOwn", function() { return shared_util__WEBPACK_IMPORTED_MODULE_2__["hasOwn"]; });
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "def", function() { return _lang__WEBPACK_IMPORTED_MODULE_2__["def"]; });
 
-/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "extend", function() { return shared_util__WEBPACK_IMPORTED_MODULE_2__["extend"]; });
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "parsePath", function() { return _lang__WEBPACK_IMPORTED_MODULE_2__["parsePath"]; });
 
-/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "isObject", function() { return shared_util__WEBPACK_IMPORTED_MODULE_2__["isObject"]; });
+/* harmony import */ var shared_util__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! shared/util */ "./src/shared/util.js");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "isPrimitive", function() { return shared_util__WEBPACK_IMPORTED_MODULE_3__["isPrimitive"]; });
 
-/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "isPlainObject", function() { return shared_util__WEBPACK_IMPORTED_MODULE_2__["isPlainObject"]; });
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "hasOwn", function() { return shared_util__WEBPACK_IMPORTED_MODULE_3__["hasOwn"]; });
 
-/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "makeMap", function() { return shared_util__WEBPACK_IMPORTED_MODULE_2__["makeMap"]; });
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "extend", function() { return shared_util__WEBPACK_IMPORTED_MODULE_3__["extend"]; });
 
-/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "noop", function() { return shared_util__WEBPACK_IMPORTED_MODULE_2__["noop"]; });
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "isObject", function() { return shared_util__WEBPACK_IMPORTED_MODULE_3__["isObject"]; });
 
-/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "no", function() { return shared_util__WEBPACK_IMPORTED_MODULE_2__["no"]; });
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "isPlainObject", function() { return shared_util__WEBPACK_IMPORTED_MODULE_3__["isPlainObject"]; });
 
-/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "identity", function() { return shared_util__WEBPACK_IMPORTED_MODULE_2__["identity"]; });
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "makeMap", function() { return shared_util__WEBPACK_IMPORTED_MODULE_3__["makeMap"]; });
 
-/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "cached", function() { return shared_util__WEBPACK_IMPORTED_MODULE_2__["cached"]; });
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "noop", function() { return shared_util__WEBPACK_IMPORTED_MODULE_3__["noop"]; });
 
-/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "camelize", function() { return shared_util__WEBPACK_IMPORTED_MODULE_2__["camelize"]; });
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "no", function() { return shared_util__WEBPACK_IMPORTED_MODULE_3__["no"]; });
 
-/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "capitalize", function() { return shared_util__WEBPACK_IMPORTED_MODULE_2__["capitalize"]; });
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "identity", function() { return shared_util__WEBPACK_IMPORTED_MODULE_3__["identity"]; });
 
-/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "remove", function() { return shared_util__WEBPACK_IMPORTED_MODULE_2__["remove"]; });
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "cached", function() { return shared_util__WEBPACK_IMPORTED_MODULE_3__["cached"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "camelize", function() { return shared_util__WEBPACK_IMPORTED_MODULE_3__["camelize"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "capitalize", function() { return shared_util__WEBPACK_IMPORTED_MODULE_3__["capitalize"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "remove", function() { return shared_util__WEBPACK_IMPORTED_MODULE_3__["remove"]; });
 
 
 
 
+
+
+/***/ }),
+
+/***/ "./src/core/util/lang.js":
+/*!*******************************!*\
+  !*** ./src/core/util/lang.js ***!
+  \*******************************/
+/*! exports provided: unicodeRegExp, def, parsePath */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "unicodeRegExp", function() { return unicodeRegExp; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "def", function() { return def; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "parsePath", function() { return parsePath; });
+/**
+ * unicode letters used for parsing html tags, component names and property paths.
+ * using https://www.w3.org/TR/html53/semantics-scripting.html#potentialcustomelementname
+ * skipping \u10000-\uEFFFF due to it freezing up PhantomJS
+ */
+var unicodeRegExp = /a-zA-Z\u00B7\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u037D\u037F-\u1FFF\u200C-\u200D\u203F-\u2040\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD/;
 /**
  * Define a property.
  */
@@ -2221,6 +2441,26 @@ function def(obj, key, val, enumerable) {
     writable: true,
     configurable: true
   });
+}
+/**
+ * Parse simple path.
+ */
+
+var bailRE = new RegExp("[^".concat(unicodeRegExp.source, ".$_\\d]"));
+function parsePath(path) {
+  if (bailRE.test(path)) {
+    return;
+  }
+
+  var segments = path.split('.');
+  return function (obj) {
+    for (var i = 0; i < segments.length; i++) {
+      if (!obj) return;
+      obj = obj[segments[i]];
+    }
+
+    return obj;
+  };
 }
 
 /***/ }),

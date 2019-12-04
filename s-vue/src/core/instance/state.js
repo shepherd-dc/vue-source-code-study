@@ -2,14 +2,14 @@
  * @Autor: Yang Yixia
  * @Date: 2019-10-08 10:02:56
  * @LastEditors: Yang Yixia
- * @LastEditTime: 2019-12-03 14:33:55
+ * @LastEditTime: 2019-12-04 11:18:25
  * @Description:
  */
 import { observe } from '../observer/index'
 import Watcher from '../observer/watcher'
 import Dep from '../observer/dep'
 
-import { noop } from '../util/index'
+import { noop, isPlainObject } from '../util/index'
 
 export function initState (vm) {
   vm._watchers = []
@@ -19,10 +19,13 @@ export function initState (vm) {
   if (opts.data) {
     initData(vm)
   }
-
   // 初始化computed
   if (opts.computed) {
     initComputed(vm, opts.computed)
+  }
+  // 初始化watch
+  if (opts.watch) {
+    initWatch(vm, opts.watch)
   }
 }
 
@@ -119,6 +122,74 @@ function createComputedGetter (key) {
         watcher.depend()
       }
       return watcher.value
+    }
+  }
+}
+
+function initWatch (vm, watch) {
+  for (const key in watch) {
+    const handler = watch[key]
+    if (Array.isArray(handler)) {
+      for (let i = 0; i < handler.length; i++) {
+        createWatcher(vm, key, handler[i])
+      }
+    } else {
+      createWatcher(vm, key, handler)
+    }
+  }
+}
+
+function createWatcher (
+  vm, // Component,
+  expOrFn, // string | Function,
+  handler, // any,
+  options // Object
+) {
+  if (isPlainObject(handler)) {
+    options = handler
+    handler = handler.handler
+  }
+  if (typeof handler === 'string') {
+    handler = vm[handler]
+  }
+  return vm.$watch(expOrFn, handler, options)
+}
+
+export function stateMixin (Vue) {
+  // flow somehow has problems with directly declared definition object
+  // when using Object.defineProperty, so we have to procedurally build up
+  // the object here.
+  const dataDef = {}
+  dataDef.get = function () { return this._data }
+  const propsDef = {}
+  propsDef.get = function () { return this._props }
+
+  Object.defineProperty(Vue.prototype, '$data', dataDef)
+  Object.defineProperty(Vue.prototype, '$props', propsDef)
+
+  Vue.prototype.$watch = function (
+    expOrFn, // string | Function,
+    cb, // any,
+    options // Object
+  ) {
+    const vm = this
+    if (isPlainObject(cb)) {
+      return createWatcher(vm, expOrFn, cb, options)
+    }
+    options = options || {}
+    options.user = true
+    const watcher = new Watcher(vm, expOrFn, cb, options)
+
+    if (options.immediate) {
+      try {
+        cb.call(vm, watcher.value)
+      } catch (error) {
+        console.error(error, vm, `callback for immediate watcher "${watcher.expression}"`)
+      }
+    }
+
+    return function unwatchFn () {
+      watcher.teardown()
     }
   }
 }
