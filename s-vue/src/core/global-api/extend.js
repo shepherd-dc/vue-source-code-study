@@ -71,7 +71,6 @@ export function initExtend (SVue) {
 }
 
 function initProps (Comp) {
-  debugger
   const props = Comp.options.props
   for (const key in props) {
     proxy(Comp.prototype, '_props', key)

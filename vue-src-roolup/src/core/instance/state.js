@@ -57,12 +57,12 @@ export function initState (vm: Component) {
   }
   if (opts.computed) initComputed(vm, opts.computed)
   if (opts.watch && opts.watch !== nativeWatch) {
-    debugger
     initWatch(vm, opts.watch)
   }
 }
 
 function initProps (vm: Component, propsOptions: Object) {
+  debugger
   const propsData = vm.$options.propsData || {}
   const props = vm._props = {}
   // cache prop keys so that future props updates can iterate using Array

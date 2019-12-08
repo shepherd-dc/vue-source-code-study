@@ -1,7 +1,7 @@
 import VNode from './vnode'
 import { resolveConstructorOptions } from 'core/instance/init'
-import { activeInstance, callHook } from '../instance/lifecycle'
-
+import { activeInstance, callHook, updateChildComponent } from '../instance/lifecycle'
+import { extractPropsFromVNodeData } from './helpers/index'
 // inline hooks to be invoked on component VNodes during patch
 const componentVNodeHooks = {
   init (vnode) {
@@ -12,16 +12,17 @@ const componentVNodeHooks = {
     child.$mount(undefined)
   },
 
+  // 组件更新时调用：当更新的 vnode 是一个组件 vnode 的时候，会执行 prepatch 的方法
   prepatch (oldVnode, vnode) {
-    // const options = vnode.componentOptions
-    // const child = vnode.componentInstance = oldVnode.componentInstance
-    // updateChildComponent(
-    //   child,
-    //   options.propsData, // updated props
-    //   options.listeners, // updated listeners
-    //   vnode, // new parent vnode
-    //   options.children // new children
-    // )
+    const options = vnode.componentOptions
+    const child = vnode.componentInstance = oldVnode.componentInstance
+    updateChildComponent(
+      child,
+      options.propsData, // updated props
+      options.listeners, // updated listeners
+      vnode, // new parent vnode
+      options.children // new children
+    )
   },
 
   insert (vnode) {
@@ -73,6 +74,10 @@ export function createComponent (
   // component constructor creation
   resolveConstructorOptions(Ctor)
 
+  // extract props
+  // 把传递给组件的 props抽离出来，new Vnode()时作为 componentOptions中的一项传入
+  const propsData = extractPropsFromVNodeData(data, Ctor, tag)
+
   // install component management hooks onto the placeholder node
   installComponentHooks(data)
 
@@ -81,7 +86,7 @@ export function createComponent (
   const vnode = new VNode(
     `vue-component-${Ctor.cid}${name ? `-${name}` : ''}`,
     data, undefined, undefined, undefined, context,
-    { Ctor, tag, children }
+    { Ctor, propsData, tag, children }
   )
 
   return vnode

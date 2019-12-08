@@ -9,7 +9,8 @@ import {
   extend,
   hasOwn,
   camelize,
-  capitalize
+  capitalize,
+  isPlainObject
 } from 'shared/util'
 
 /**
@@ -78,6 +79,54 @@ ASSET_TYPES.forEach(function (type) {
 })
 
 /**
+ * Watchers.
+ *
+ * Watchers hashes should not overwrite one
+ * another, so we merge them as arrays.
+ */
+strats.watch = function (
+  parentVal, // Object,
+  childVal, // Object,
+  vm, // Component,
+  key // string
+) {
+  if (!childVal) return Object.create(parentVal || null)
+  if (!parentVal) return childVal
+  const ret = {}
+  extend(ret, parentVal)
+  for (const key in childVal) {
+    let parent = ret[key]
+    const child = childVal[key]
+    if (parent && !Array.isArray(parent)) {
+      parent = [parent]
+    }
+    ret[key] = parent
+      ? parent.concat(child)
+      : Array.isArray(child) ? child : [child]
+  }
+  return ret
+}
+
+/**
+ * Other object hashes.
+ */
+strats.props =
+strats.methods =
+strats.inject =
+strats.computed = function (
+  parentVal, // Object,
+  childVal, // Object,
+  vm, // Component,
+  key // string
+) {
+  if (!parentVal) return childVal
+  const ret = Object.create(null)
+  extend(ret, parentVal)
+  if (childVal) extend(ret, childVal)
+  return ret
+}
+
+/**
  * Default strategy.
  */
 const defaultStrat = function (parentVal, childVal) {
@@ -98,6 +147,8 @@ export function mergeOptions (
   if (typeof child === 'function') {
     child = child.options
   }
+
+  normalizeProps(child, vm)
 
   // Apply extends and mixins on the child options,
   // but only if it is a raw options object that isn't
@@ -129,6 +180,42 @@ export function mergeOptions (
     options[key] = strat(parent[key], child[key], vm, key)
   }
   return options
+}
+
+/**
+ * Ensure all props option syntax are normalized into the
+ * Object-based format.
+ */
+function normalizeProps (options, vm) {
+  const props = options.props
+  if (!props) return
+  const res = {}
+  let i, val, name
+  if (Array.isArray(props)) {
+    i = props.length
+    while (i--) {
+      val = props[i]
+      if (typeof val === 'string') {
+        name = camelize(val)
+        res[name] = { type: null }
+      } else if (process.env.NODE_ENV !== 'production') {
+        console.warn('props must be strings when using array syntax.')
+      }
+    }
+  } else if (isPlainObject(props)) {
+    for (const key in props) {
+      val = props[key]
+      name = camelize(key)
+      res[name] = isPlainObject(val)
+        ? val
+        : { type: val }
+    }
+  } else if (process.env.NODE_ENV !== 'production') {
+    console.warn(
+      'Invalid value for option "props": expected an Array or an Object'
+    )
+  }
+  options.props = res
 }
 
 /**

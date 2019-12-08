@@ -112,6 +112,14 @@ export const capitalize = cached((str) => {
 })
 
 /**
+ * Hyphenate a camelCase string.
+ */
+const hyphenateRE = /\B([A-Z])/g
+export const hyphenate = cached((str) => {
+  return str.replace(hyphenateRE, '-$1').toLowerCase()
+})
+
+/**
  * Remove an item from an array.
  */
 export function remove (arr, item) {

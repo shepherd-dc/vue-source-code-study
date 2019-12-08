@@ -16,44 +16,46 @@
       <div id="app">
         <h1>{{ msg }}</h1>
         <button @click="change">change</button>
-        <!-- <todos></todos> -->
+        <todos :msg="msg"></todos>
       </div>
     </template>
 
-    <!-- <template id="hello">
+    <template id="hello">
       <div>
-        <h1>{{ ques }}</h1>
-        <div>
+        <h1 v-if="msg === 'Hello Vue'">{{ msg }}</h1>
+        <h2 v-else>打豆豆</h2>
+        <!-- <div>
           <input type="text" v-model="val" />
           <button @click="addTodo">添加</button>
         </div>
         <ul>
           <li v-for="todo in todos">{{ todo }}</li>
-        </ul>
+        </ul> -->
       </div>
-    </template> -->
+    </template>
   </div>
 
   <script>
     let Todos = {
       name: 'todos',
+      props: ['msg'],
       data() {
         return {
-          val: '',
-          todos: ['吃饭', '睡觉', '打豆豆'],
-          ques: '豆豆是谁？'
+          // val: '',
+          // todos: ['吃饭', '睡觉', '打豆豆'],
+          // ques: '豆豆是谁？'
         }
       },
-      // template: '#hello',
-      render (h) {
-        return h('div', { class: { hello: true } }, [
-          h('h2', this.ques),
-          h('div', [
-            h('input', {attrs: {type:'text', placeholder:'请输入'}}),
-            h('button', {}, '添加')
-          ])
-        ])
-      },
+      template: '#hello',
+      // render (h) {
+      //   return h('div', { class: { hello: true } }, [
+      //     h('h2', this.ques),
+      //     h('div', [
+      //       h('input', {attrs: {type:'text', placeholder:'请输入'}}),
+      //       h('button', {}, '添加')
+      //     ])
+      //   ])
+      // },
       methods: {
         addTodo() {
           if (this.val) {
@@ -66,9 +68,9 @@
 
     let App = {
       name: 'app',
-      // components: {
-      //   Todos
-      // },
+      components: {
+        Todos
+      },
       template: '#app1',
       // render (h) {
       //   return h('div', {
@@ -101,13 +103,13 @@
         // msg (newVal, oldVal) {
         //   console.log('msg:' + newVal + ',' + oldVal)
         // },
-        msg: {
-          immediate: true,
-          deep: true,
-          handler (newVal, oldVal) {
-            console.log('msg:' + newVal + ',' + oldVal)
-          }
-        }
+        // msg: {
+        //   immediate: true,
+        //   deep: true,
+        //   handler (newVal, oldVal) {
+        //     console.log('msg:' + newVal + ',' + oldVal)
+        //   }
+        // }
       }
     }
 

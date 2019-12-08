@@ -861,7 +861,6 @@ function initExtend(SVue) {
 }
 
 function initProps(Comp) {
-  debugger;
   var props = Comp.options.props;
 
   for (var key in props) {
@@ -1119,22 +1118,28 @@ function resolveModifiedOptions(Ctor) {
 /*!****************************************!*\
   !*** ./src/core/instance/lifecycle.js ***!
   \****************************************/
-/*! exports provided: activeInstance, initLifecycle, lifecycleMixin, mountComponent, callHook */
+/*! exports provided: activeInstance, isUpdatingChildComponent, initLifecycle, lifecycleMixin, mountComponent, updateChildComponent, callHook */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "activeInstance", function() { return activeInstance; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isUpdatingChildComponent", function() { return isUpdatingChildComponent; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "initLifecycle", function() { return initLifecycle; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "lifecycleMixin", function() { return lifecycleMixin; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "mountComponent", function() { return mountComponent; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "updateChildComponent", function() { return updateChildComponent; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "callHook", function() { return callHook; });
 /* harmony import */ var _observer_watcher__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../observer/watcher */ "./src/core/observer/watcher.js");
-/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../util */ "./src/core/util/index.js");
+/* harmony import */ var _observer_index__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../observer/index */ "./src/core/observer/index.js");
+/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../util */ "./src/core/util/index.js");
+
 
  // 全局当前激活实例
 
-var activeInstance = null; // export function setActiveInstance(vm) {
+var activeInstance = null; // updateChildComponent state
+
+var isUpdatingChildComponent = false; // export function setActiveInstance(vm) {
 //   const prevActiveInstance = activeInstance
 //   activeInstance = vm
 //   return () => {
@@ -1192,7 +1197,7 @@ function mountComponent(vm, el) {
 
   new _observer_watcher__WEBPACK_IMPORTED_MODULE_0__["default"](vm, updateComponent,
   /* this.getter */
-  _util__WEBPACK_IMPORTED_MODULE_1__["noop"],
+  _util__WEBPACK_IMPORTED_MODULE_2__["noop"],
   /* this.cb */
   {
     before: function before() {
@@ -1213,6 +1218,47 @@ function mountComponent(vm, el) {
   }
 
   return vm;
+}
+function updateChildComponent(vm, // Component,
+propsData, // ?Object,
+listeners, // ?Object,
+parentVnode, // MountedComponentVNode,
+renderChildren // ?Array<VNode>
+) {
+  if (true) {
+    isUpdatingChildComponent = true;
+  }
+
+  vm.$options._parentVnode = parentVnode;
+  vm.$vnode = parentVnode; // update vm's placeholder node without re-render
+
+  if (vm._vnode) {
+    // update child tree's parent
+    vm._vnode.parent = parentVnode;
+  }
+
+  vm.$options._renderChildren = renderChildren; // update $attrs and $listeners hash
+  // these are also reactive so they may trigger child update if the child
+  // used them during render
+
+  vm.$attrs = parentVnode.data.attrs || {};
+  vm.$listeners = listeners || {};
+  debugger; // update props
+
+  if (propsData && vm.$options.props) {
+    Object(_observer_index__WEBPACK_IMPORTED_MODULE_1__["toggleObserving"])(false);
+    var props = vm._props;
+    var propKeys = vm.$options._propKeys || [];
+
+    for (var i = 0; i < propKeys.length; i++) {
+      var key = propKeys[i];
+      props[key] = propsData[key];
+    }
+
+    Object(_observer_index__WEBPACK_IMPORTED_MODULE_1__["toggleObserving"])(true); // keep a copy of raw propsData
+
+    vm.$options.propsData = propsData;
+  }
 }
 function callHook(vm, hook) {
   var handlers = vm.$options[hook];
@@ -2393,7 +2439,7 @@ function () {
 /*!********************************!*\
   !*** ./src/core/util/index.js ***!
   \********************************/
-/*! exports provided: isPrimitive, hasOwn, extend, isObject, isPlainObject, makeMap, noop, no, identity, cached, camelize, capitalize, remove, mergeOptions, resolveAsset, isUsingMicroTask, nextTick, unicodeRegExp, def, parsePath */
+/*! exports provided: mergeOptions, resolveAsset, isUsingMicroTask, nextTick, unicodeRegExp, def, parsePath, isPrimitive, hasOwn, extend, isObject, isPlainObject, makeMap, noop, no, identity, cached, camelize, capitalize, hyphenate, remove */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -2439,6 +2485,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "camelize", function() { return shared_util__WEBPACK_IMPORTED_MODULE_3__["camelize"]; });
 
 /* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "capitalize", function() { return shared_util__WEBPACK_IMPORTED_MODULE_3__["capitalize"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "hyphenate", function() { return shared_util__WEBPACK_IMPORTED_MODULE_3__["hyphenate"]; });
 
 /* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "remove", function() { return shared_util__WEBPACK_IMPORTED_MODULE_3__["remove"]; });
 
@@ -2651,8 +2699,55 @@ shared_constants__WEBPACK_IMPORTED_MODULE_1__["ASSET_TYPES"].forEach(function (t
   strats[type + 's'] = mergeAssets;
 });
 /**
+ * Watchers.
+ *
+ * Watchers hashes should not overwrite one
+ * another, so we merge them as arrays.
+ */
+
+strats.watch = function (parentVal, // Object,
+childVal, // Object,
+vm, // Component,
+key // string
+) {
+  if (!childVal) return Object.create(parentVal || null);
+  if (!parentVal) return childVal;
+  var ret = {};
+  Object(shared_util__WEBPACK_IMPORTED_MODULE_2__["extend"])(ret, parentVal);
+
+  for (var _key in childVal) {
+    var parent = ret[_key];
+    var child = childVal[_key];
+
+    if (parent && !Array.isArray(parent)) {
+      parent = [parent];
+    }
+
+    ret[_key] = parent ? parent.concat(child) : Array.isArray(child) ? child : [child];
+  }
+
+  return ret;
+};
+/**
+ * Other object hashes.
+ */
+
+
+strats.props = strats.methods = strats.inject = strats.computed = function (parentVal, // Object,
+childVal, // Object,
+vm, // Component,
+key // string
+) {
+  if (!parentVal) return childVal;
+  var ret = Object.create(null);
+  Object(shared_util__WEBPACK_IMPORTED_MODULE_2__["extend"])(ret, parentVal);
+  if (childVal) Object(shared_util__WEBPACK_IMPORTED_MODULE_2__["extend"])(ret, childVal);
+  return ret;
+};
+/**
  * Default strategy.
  */
+
 
 var defaultStrat = function defaultStrat(parentVal, childVal) {
   return childVal === undefined ? parentVal : childVal;
@@ -2666,11 +2761,12 @@ var defaultStrat = function defaultStrat(parentVal, childVal) {
 function mergeOptions(parent, child, vm) {
   if (typeof child === 'function') {
     child = child.options;
-  } // Apply extends and mixins on the child options,
+  }
+
+  normalizeProps(child, vm); // Apply extends and mixins on the child options,
   // but only if it is a raw options object that isn't
   // the result of another mergeOptions call.
   // Only merged options has the _base property.
-
 
   if (!child._base) {
     if (child["extends"]) {
@@ -2705,10 +2801,51 @@ function mergeOptions(parent, child, vm) {
   return options;
 }
 /**
+ * Ensure all props option syntax are normalized into the
+ * Object-based format.
+ */
+
+function normalizeProps(options, vm) {
+  var props = options.props;
+  if (!props) return;
+  var res = {};
+  var i, val, name;
+
+  if (Array.isArray(props)) {
+    i = props.length;
+
+    while (i--) {
+      val = props[i];
+
+      if (typeof val === 'string') {
+        name = Object(shared_util__WEBPACK_IMPORTED_MODULE_2__["camelize"])(val);
+        res[name] = {
+          type: null
+        };
+      } else if (true) {
+        console.warn('props must be strings when using array syntax.');
+      }
+    }
+  } else if (Object(shared_util__WEBPACK_IMPORTED_MODULE_2__["isPlainObject"])(props)) {
+    for (var key in props) {
+      val = props[key];
+      name = Object(shared_util__WEBPACK_IMPORTED_MODULE_2__["camelize"])(key);
+      res[name] = Object(shared_util__WEBPACK_IMPORTED_MODULE_2__["isPlainObject"])(val) ? val : {
+        type: val
+      };
+    }
+  } else if (true) {
+    console.warn('Invalid value for option "props": expected an Array or an Object');
+  }
+
+  options.props = res;
+}
+/**
  * Resolve an asset.
  * This function is used because child instances need access
  * to assets defined in its ancestor chain.
  */
+
 
 function resolveAsset(options, // Object,
 type, // string,
@@ -2744,7 +2881,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _vnode__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./vnode */ "./src/core/vdom/vnode.js");
 /* harmony import */ var core_instance_init__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! core/instance/init */ "./src/core/instance/init.js");
 /* harmony import */ var _instance_lifecycle__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../instance/lifecycle */ "./src/core/instance/lifecycle.js");
+/* harmony import */ var _helpers_index__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./helpers/index */ "./src/core/vdom/helpers/index.js");
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
 
 
 
@@ -2757,15 +2896,15 @@ var componentVNodeHooks = {
     );
     child.$mount(undefined);
   },
-  prepatch: function prepatch(oldVnode, vnode) {// const options = vnode.componentOptions
-    // const child = vnode.componentInstance = oldVnode.componentInstance
-    // updateChildComponent(
-    //   child,
-    //   options.propsData, // updated props
-    //   options.listeners, // updated listeners
-    //   vnode, // new parent vnode
-    //   options.children // new children
-    // )
+  // 组件更新时调用：当更新的 vnode 是一个组件 vnode 的时候，会执行 prepatch 的方法
+  prepatch: function prepatch(oldVnode, vnode) {
+    var options = vnode.componentOptions;
+    var child = vnode.componentInstance = oldVnode.componentInstance;
+    Object(_instance_lifecycle__WEBPACK_IMPORTED_MODULE_2__["updateChildComponent"])(child, options.propsData, // updated props
+    options.listeners, // updated listeners
+    vnode, // new parent vnode
+    options.children // new children
+    );
   },
   insert: function insert(vnode) {
     var componentInstance = vnode.componentInstance;
@@ -2809,13 +2948,17 @@ tag // string
   data = data || {}; // resolve constructor options in case global mixins are applied after
   // component constructor creation
 
-  Object(core_instance_init__WEBPACK_IMPORTED_MODULE_1__["resolveConstructorOptions"])(Ctor); // install component management hooks onto the placeholder node
+  Object(core_instance_init__WEBPACK_IMPORTED_MODULE_1__["resolveConstructorOptions"])(Ctor); // extract props
+  // 把传递给组件的 props抽离出来，new Vnode()时作为 componentOptions中的一项传入
+
+  var propsData = Object(_helpers_index__WEBPACK_IMPORTED_MODULE_4__["extractPropsFromVNodeData"])(data, Ctor, tag); // install component management hooks onto the placeholder node
 
   installComponentHooks(data); // return a placeholder vnode
 
   var name = Ctor.options.name || tag;
   var vnode = new _vnode__WEBPACK_IMPORTED_MODULE_0__["default"]("vue-component-".concat(Ctor.cid).concat(name ? "-".concat(name) : ''), data, undefined, undefined, undefined, context, {
     Ctor: Ctor,
+    propsData: propsData,
     tag: tag,
     children: children
   });
@@ -2976,6 +3119,101 @@ function normalizeArrayChildren(children) {
 
 /***/ }),
 
+/***/ "./src/core/vdom/helpers/extract-props.js":
+/*!************************************************!*\
+  !*** ./src/core/vdom/helpers/extract-props.js ***!
+  \************************************************/
+/*! exports provided: extractPropsFromVNodeData */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "extractPropsFromVNodeData", function() { return extractPropsFromVNodeData; });
+/* harmony import */ var core_util_index__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! core/util/index */ "./src/core/util/index.js");
+
+function extractPropsFromVNodeData(data, // VNodeData,
+Ctor, // Class<Component>,
+tag // string
+) {
+  // we are only extracting raw values here.
+  // validation and default values are handled in the child
+  // component itself.
+  var propOptions = Ctor.options.props;
+
+  if (!propOptions) {
+    return;
+  }
+
+  var res = {};
+  var attrs = data.attrs,
+      props = data.props;
+
+  if (attrs || props) {
+    for (var key in propOptions) {
+      var altKey = Object(core_util_index__WEBPACK_IMPORTED_MODULE_0__["hyphenate"])(key);
+
+      if (true) {
+        var keyInLowerCase = key.toLowerCase();
+
+        if (key !== keyInLowerCase && attrs && Object(core_util_index__WEBPACK_IMPORTED_MODULE_0__["hasOwn"])(attrs, keyInLowerCase)) {
+          console.warn("Prop \"".concat(keyInLowerCase, "\" is passed to component ") + "".concat(tag, ", but the declared prop name is") + " \"".concat(key, "\". ") + 'Note that HTML attributes are case-insensitive and camelCased ' + 'props need to use their kebab-case equivalents when using in-DOM ' + "templates. You should probably use \"".concat(altKey, "\" instead of \"").concat(key, "\"."));
+        }
+      }
+
+      checkProp(res, props, key, altKey, true) || checkProp(res, attrs, key, altKey, false);
+    }
+  }
+
+  return res;
+}
+
+function checkProp(res, // Object,
+hash, // ?Object,
+key, // string,
+altKey, // string,
+preserve // boolean
+) {
+  if (hash) {
+    if (Object(core_util_index__WEBPACK_IMPORTED_MODULE_0__["hasOwn"])(hash, key)) {
+      res[key] = hash[key];
+
+      if (!preserve) {
+        delete hash[key];
+      }
+
+      return true;
+    } else if (Object(core_util_index__WEBPACK_IMPORTED_MODULE_0__["hasOwn"])(hash, altKey)) {
+      res[key] = hash[altKey];
+
+      if (!preserve) {
+        delete hash[altKey];
+      }
+
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/***/ }),
+
+/***/ "./src/core/vdom/helpers/index.js":
+/*!****************************************!*\
+  !*** ./src/core/vdom/helpers/index.js ***!
+  \****************************************/
+/*! exports provided: extractPropsFromVNodeData */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _extract_props__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./extract-props */ "./src/core/vdom/helpers/extract-props.js");
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "extractPropsFromVNodeData", function() { return _extract_props__WEBPACK_IMPORTED_MODULE_0__["extractPropsFromVNodeData"]; });
+
+
+
+/***/ }),
+
 /***/ "./src/core/vdom/patch.js":
 /*!********************************!*\
   !*** ./src/core/vdom/patch.js ***!
@@ -2988,7 +3226,34 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "createPatchFunction", function() { return createPatchFunction; });
 /* harmony import */ var web_runtime_node_ops__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! web/runtime/node-ops */ "./src/web/runtime/node-ops.js");
 /* harmony import */ var _vnode__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./vnode */ "./src/core/vdom/vnode.js");
+/* harmony import */ var web_util_element__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! web/util/element */ "./src/web/util/element.js");
 
+
+
+
+function sameVnode(a, b) {
+  return a.key === b.key && (a.tag === b.tag && a.isComment === b.isComment && a.data === b.data && sameInputType(a, b) || a.isAsyncPlaceholder && a.asyncFactory === b.asyncFactory && !b.asyncFactory.error);
+}
+
+function sameInputType(a, b) {
+  if (a.tag !== 'input') return true;
+  var i;
+  var typeA = (i = a.data) && (i = i.attrs) && i.type;
+  var typeB = (i = b.data) && (i = i.attrs) && i.type;
+  return typeA === typeB || Object(web_util_element__WEBPACK_IMPORTED_MODULE_2__["isTextInputType"])(typeA) && Object(web_util_element__WEBPACK_IMPORTED_MODULE_2__["isTextInputType"])(typeB);
+}
+
+function createKeyToOldIdx(children, beginIdx, endIdx) {
+  var i, key;
+  var map = {};
+
+  for (i = beginIdx; i <= endIdx; ++i) {
+    key = children[i].key;
+    if (key) map[key] = i;
+  }
+
+  return map;
+}
 
 function createPatchFunction() {
   // 在dom的基础上新建一个空的vnode, dom属性保存在elm上
@@ -3014,7 +3279,8 @@ function createPatchFunction() {
       createChildren(vnode, children, insertedVnodeQueue); // 处理 html属性
 
       if (data) {
-        // invokeCreateHooks(vnode, insertedVnodeQueue)
+        debugger; // invokeCreateHooks(vnode, insertedVnodeQueue)
+
         console.log(data);
       }
 
@@ -3099,6 +3365,131 @@ function createPatchFunction() {
     }
   }
 
+  function findIdxInOld(node, oldCh, start, end) {
+    for (var i = start; i < end; i++) {
+      var c = oldCh[i];
+      if (c && sameVnode(node, c)) return i;
+    }
+  }
+
+  function patchVnode(oldVnode, vnode, insertedVnodeQueue, ownerArray, index, removeOnly) {
+    if (oldVnode === vnode) {
+      return;
+    }
+
+    debugger;
+    var elm = vnode.elm = oldVnode.elm;
+    var i;
+    var data = vnode.data; // 当更新的 vnode 是一个组件 vnode 的时候，会执行 prepatch 的方法
+
+    if (data && (i = data.hook) && (i = i.prepatch)) {
+      i(oldVnode, vnode);
+    }
+
+    var oldCh = oldVnode.children;
+    var ch = vnode.children; // if ((data) && isPatchable(vnode)) {
+    //   for (i = 0; i < cbs.update.length; ++i) cbs.update[i](oldVnode, vnode)
+    //   if ((i = data.hook) && (i = i.update)) i(oldVnode, vnode)
+    // }
+
+    if (!vnode.text) {
+      if (oldCh && ch) {
+        if (oldCh !== ch) updateChildren(elm, oldCh, ch, insertedVnodeQueue, removeOnly);
+      } else if (ch) {
+        if (oldVnode.text) web_runtime_node_ops__WEBPACK_IMPORTED_MODULE_0__["setTextContent"](elm, '');
+        addVnodes(elm, null, ch, 0, ch.length - 1, insertedVnodeQueue);
+      } else if (oldCh) {
+        removeVnodes(oldCh, 0, oldCh.length - 1);
+      } else if (oldVnode.text) {
+        web_runtime_node_ops__WEBPACK_IMPORTED_MODULE_0__["setTextContent"](elm, '');
+      }
+    } else if (oldVnode.text !== vnode.text) {
+      web_runtime_node_ops__WEBPACK_IMPORTED_MODULE_0__["setTextContent"](elm, vnode.text);
+    }
+
+    if (data) {
+      if ((i = data.hook) && (i = i.postpatch)) i(oldVnode, vnode);
+    }
+  }
+
+  function updateChildren(parentElm, oldCh, newCh, insertedVnodeQueue, removeOnly) {
+    var oldStartIdx = 0;
+    var newStartIdx = 0;
+    var oldEndIdx = oldCh.length - 1;
+    var oldStartVnode = oldCh[0];
+    var oldEndVnode = oldCh[oldEndIdx];
+    var newEndIdx = newCh.length - 1;
+    var newStartVnode = newCh[0];
+    var newEndVnode = newCh[newEndIdx];
+    var oldKeyToIdx, idxInOld, vnodeToMove, refElm; // removeOnly is a special flag used only by <transition-group>
+    // to ensure removed elements stay in correct relative positions
+    // during leaving transitions
+
+    var canMove = !removeOnly;
+
+    while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
+      if (!oldStartVnode) {
+        oldStartVnode = oldCh[++oldStartIdx]; // Vnode has been moved left
+      } else if (!oldEndVnode) {
+        oldEndVnode = oldCh[--oldEndIdx];
+      } else if (sameVnode(oldStartVnode, newStartVnode)) {
+        patchVnode(oldStartVnode, newStartVnode, insertedVnodeQueue, newCh, newStartIdx);
+        oldStartVnode = oldCh[++oldStartIdx];
+        newStartVnode = newCh[++newStartIdx];
+      } else if (sameVnode(oldEndVnode, newEndVnode)) {
+        patchVnode(oldEndVnode, newEndVnode, insertedVnodeQueue, newCh, newEndIdx);
+        oldEndVnode = oldCh[--oldEndIdx];
+        newEndVnode = newCh[--newEndIdx];
+      } else if (sameVnode(oldStartVnode, newEndVnode)) {
+        // Vnode moved right
+        patchVnode(oldStartVnode, newEndVnode, insertedVnodeQueue, newCh, newEndIdx);
+        canMove && web_runtime_node_ops__WEBPACK_IMPORTED_MODULE_0__["insertBefore"](parentElm, oldStartVnode.elm, web_runtime_node_ops__WEBPACK_IMPORTED_MODULE_0__["nextSibling"](oldEndVnode.elm));
+        oldStartVnode = oldCh[++oldStartIdx];
+        newEndVnode = newCh[--newEndIdx];
+      } else if (sameVnode(oldEndVnode, newStartVnode)) {
+        // Vnode moved left
+        patchVnode(oldEndVnode, newStartVnode, insertedVnodeQueue, newCh, newStartIdx);
+        canMove && web_runtime_node_ops__WEBPACK_IMPORTED_MODULE_0__["insertBefore"](parentElm, oldEndVnode.elm, oldStartVnode.elm);
+        oldEndVnode = oldCh[--oldEndIdx];
+        newStartVnode = newCh[++newStartIdx];
+      } else {
+        if (!oldKeyToIdx) oldKeyToIdx = createKeyToOldIdx(oldCh, oldStartIdx, oldEndIdx);
+        idxInOld = newStartVnode.key ? oldKeyToIdx[newStartVnode.key] : findIdxInOld(newStartVnode, oldCh, oldStartIdx, oldEndIdx);
+
+        if (!idxInOld) {
+          // New element
+          createElm(newStartVnode, insertedVnodeQueue, parentElm, oldStartVnode.elm, false, newCh, newStartIdx);
+        } else {
+          vnodeToMove = oldCh[idxInOld];
+
+          if (sameVnode(vnodeToMove, newStartVnode)) {
+            patchVnode(vnodeToMove, newStartVnode, insertedVnodeQueue, newCh, newStartIdx);
+            oldCh[idxInOld] = undefined;
+            canMove && web_runtime_node_ops__WEBPACK_IMPORTED_MODULE_0__["insertBefore"](parentElm, vnodeToMove.elm, oldStartVnode.elm);
+          } else {
+            // same key but different element. treat as new element
+            createElm(newStartVnode, insertedVnodeQueue, parentElm, oldStartVnode.elm, false, newCh, newStartIdx);
+          }
+        }
+
+        newStartVnode = newCh[++newStartIdx];
+      }
+    }
+
+    if (oldStartIdx > oldEndIdx) {
+      refElm = !newCh[newEndIdx + 1] ? null : newCh[newEndIdx + 1].elm;
+      addVnodes(parentElm, refElm, newCh, newStartIdx, newEndIdx, insertedVnodeQueue);
+    } else if (newStartIdx > newEndIdx) {
+      removeVnodes(oldCh, oldStartIdx, oldEndIdx);
+    }
+  }
+
+  function addVnodes(parentElm, refElm, vnodes, startIdx, endIdx, insertedVnodeQueue) {
+    for (; startIdx <= endIdx; ++startIdx) {
+      createElm(vnodes[startIdx], insertedVnodeQueue, parentElm, refElm, false, vnodes, startIdx);
+    }
+  }
+
   function invokeInsertHook(vnode, queue, initial) {
     // delay insert hooks for component root nodes, invoke them after the element is really inserted
     // 组件patch时 isInitialPatch = true
@@ -3111,13 +3502,14 @@ function createPatchFunction() {
     }
   }
 
-  return function patch(oldVnode, vnode) {
+  return function patch(oldVnode, vnode, hydrating, removeOnly) {
     if (!vnode) {
       return;
     }
 
     var isInitialPatch = false;
     var insertedVnodeQueue = [];
+    debugger;
 
     if (!oldVnode) {
       // empty mount (likely as component), create new root element
@@ -3127,11 +3519,16 @@ function createPatchFunction() {
       createElm(vnode, insertedVnodeQueue);
     } else {
       // 如果有oldVnode(vm.$el), 将dom元素转化成虚拟dom——vnode, dom属性保存在oldVnode.elm上
-      var isRealElement = oldVnode.nodeType;
+      var isRealElement = oldVnode.nodeType; // 不是真实 dom节点且为同一个 Vnoe
 
-      if (isRealElement) {
-        // create an empty node and replace it
-        oldVnode = emptyNodeAt(oldVnode);
+      if (!isRealElement && sameVnode(oldVnode, vnode)) {
+        // patch existing root node
+        patchVnode(oldVnode, vnode, insertedVnodeQueue, null, null, removeOnly);
+      } else {
+        if (isRealElement) {
+          // create an empty node and replace it
+          oldVnode = emptyNodeAt(oldVnode);
+        }
       } // replacing existing element
 
 
@@ -3295,7 +3692,7 @@ var LIFECYCLE_HOOKS = ['beforeCreate', 'created', 'beforeMount', 'mounted', 'bef
 /*!****************************!*\
   !*** ./src/shared/util.js ***!
   \****************************/
-/*! exports provided: isPrimitive, hasOwn, extend, isObject, isPlainObject, makeMap, noop, no, identity, cached, camelize, capitalize, remove */
+/*! exports provided: isPrimitive, hasOwn, extend, isObject, isPlainObject, makeMap, noop, no, identity, cached, camelize, capitalize, hyphenate, remove */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -3312,6 +3709,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "cached", function() { return cached; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "camelize", function() { return camelize; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "capitalize", function() { return capitalize; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "hyphenate", function() { return hyphenate; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "remove", function() { return remove; });
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
@@ -3431,6 +3829,14 @@ var camelize = cached(function (str) {
 
 var capitalize = cached(function (str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
+});
+/**
+ * Hyphenate a camelCase string.
+ */
+
+var hyphenateRE = /\B([A-Z])/g;
+var hyphenate = cached(function (str) {
+  return str.replace(hyphenateRE, '-$1').toLowerCase();
 });
 /**
  * Remove an item from an array.
@@ -3569,7 +3975,7 @@ var patch = Object(core_vdom_patch__WEBPACK_IMPORTED_MODULE_0__["createPatchFunc
 /*!*********************************!*\
   !*** ./src/web/util/element.js ***!
   \*********************************/
-/*! exports provided: isHTMLTag, isSVG, isReservedTag, isUnknownElement */
+/*! exports provided: isHTMLTag, isSVG, isReservedTag, isUnknownElement, isTextInputType */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -3578,6 +3984,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isSVG", function() { return isSVG; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isReservedTag", function() { return isReservedTag; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isUnknownElement", function() { return isUnknownElement; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isTextInputType", function() { return isTextInputType; });
 /* harmony import */ var shared_util__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! shared/util */ "./src/shared/util.js");
 
 var isHTMLTag = Object(shared_util__WEBPACK_IMPORTED_MODULE_0__["makeMap"])('html,body,base,head,link,meta,style,title,' + 'address,article,aside,footer,header,h1,h2,h3,h4,h5,h6,hgroup,nav,section,' + 'div,dd,dl,dt,figcaption,figure,picture,hr,img,li,main,ol,p,pre,ul,' + 'a,b,abbr,bdi,bdo,br,cite,code,data,dfn,em,i,kbd,mark,q,rp,rt,rtc,ruby,' + 's,samp,small,span,strong,sub,sup,time,u,var,wbr,area,audio,map,track,video,' + 'embed,object,param,source,canvas,script,noscript,del,ins,' + 'caption,col,colgroup,table,thead,tbody,td,th,tr,' + 'button,datalist,fieldset,form,input,label,legend,meter,optgroup,option,' + 'output,progress,select,textarea,' + 'details,dialog,menu,menuitem,summary,' + 'content,element,shadow,template,blockquote,iframe,tfoot'); // this map is intentionally selective, only covering SVG elements that may
@@ -3603,6 +4010,7 @@ function isUnknownElement(tag) {
     return unknownElementCache[tag] = /HTMLUnknownElement/.test(el.toString());
   }
 }
+var isTextInputType = Object(shared_util__WEBPACK_IMPORTED_MODULE_0__["makeMap"])('text,number,password,search,email,tel,url');
 
 /***/ }),
 
@@ -3610,7 +4018,7 @@ function isUnknownElement(tag) {
 /*!*******************************!*\
   !*** ./src/web/util/index.js ***!
   \*******************************/
-/*! exports provided: query, isHTMLTag, isSVG, isReservedTag, isUnknownElement */
+/*! exports provided: isHTMLTag, isSVG, isReservedTag, isUnknownElement, isTextInputType, query */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -3624,6 +4032,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "isReservedTag", function() { return _element__WEBPACK_IMPORTED_MODULE_0__["isReservedTag"]; });
 
 /* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "isUnknownElement", function() { return _element__WEBPACK_IMPORTED_MODULE_0__["isUnknownElement"]; });
+
+/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, "isTextInputType", function() { return _element__WEBPACK_IMPORTED_MODULE_0__["isTextInputType"]; });
 
 
 /**

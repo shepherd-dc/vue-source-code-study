@@ -260,6 +260,7 @@ export function updateChildComponent (
   vm.$attrs = parentVnode.data.attrs || emptyObject
   vm.$listeners = listeners || emptyObject
 
+  debugger
   // update props
   if (propsData && vm.$options.props) {
     toggleObserving(false)

@@ -48,26 +48,27 @@
           hi: 'Hi~嗨皮~'
         }
       },
-      computed: {
-        compu () {
-          return this.hi.replace('嗨皮', 'Computed')
-        }
-      },
+      // computed: {
+      //   compu () {
+      //     return this.hi.replace('嗨皮', 'Computed')
+      //   }
+      // },
       mounted() {
-        setTimeout(()=>{
-          this.hi = 'New 嗨皮'
-        }, 1500)
+        // setTimeout(()=>{
+        //   this.hi = 'New 嗨皮'
+        // }, 1500)
         console.log('Hello component mounted')
+        // console.log('props: ' + this.prop)
       },
-      watch: {
-        hi (newVal) {
-          console.log(newVal)
-        }
-      },
+      // watch: {
+      //   hi (newVal) {
+      //     console.log(newVal)
+      //   }
+      // },
       render (h) {
         return h('div', [
           h('h3', this.hi),
-          h('h4', this.compu),
+          h('h4', this.prop),
           // h('Child')
         ])
       }
@@ -77,7 +78,7 @@
       el: '#app',
       data() {
         return {
-          // msg: 'Hello world!',
+          msg: 'Hello world!',
           // foo: {
           //   bar: 'bar'
           // }
@@ -90,7 +91,9 @@
       },
       async mounted() {
         // console.log('SVue instance mounted:', this.msg)
-        // this.msg = "Mounted change"
+        setTimeout(()=>{
+          this.msg = "Mounted change"
+        }, 5000)
         // await this.$nextTick()
         // console.log(this.msg)
       },
@@ -101,7 +104,11 @@
         // }, this.msg)
 
         // 渲染组件
-        return h('hello')
+        return h('hello', {
+          props: {
+            prop: this.msg
+          }
+        })
       }
     })
     console.log(svue)

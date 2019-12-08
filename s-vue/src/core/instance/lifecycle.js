@@ -1,8 +1,12 @@
 import Watcher from '../observer/watcher'
+import { toggleObserving } from '../observer/index'
 import { noop } from '../util'
 
 // 全局当前激活实例
 export let activeInstance = null
+
+// updateChildComponent state
+export let isUpdatingChildComponent = false
 
 // export function setActiveInstance(vm) {
 //   const prevActiveInstance = activeInstance
@@ -87,6 +91,47 @@ export function mountComponent (vm, el) {
     callHook(vm, 'mounted')
   }
   return vm
+}
+
+export function updateChildComponent (
+  vm, // Component,
+  propsData, // ?Object,
+  listeners, // ?Object,
+  parentVnode, // MountedComponentVNode,
+  renderChildren // ?Array<VNode>
+) {
+  if (process.env.NODE_ENV !== 'production') {
+    isUpdatingChildComponent = true
+  }
+
+  vm.$options._parentVnode = parentVnode
+  vm.$vnode = parentVnode // update vm's placeholder node without re-render
+
+  if (vm._vnode) { // update child tree's parent
+    vm._vnode.parent = parentVnode
+  }
+  vm.$options._renderChildren = renderChildren
+
+  // update $attrs and $listeners hash
+  // these are also reactive so they may trigger child update if the child
+  // used them during render
+  vm.$attrs = parentVnode.data.attrs || {}
+  vm.$listeners = listeners || {}
+
+  debugger
+  // update props
+  if (propsData && vm.$options.props) {
+    toggleObserving(false)
+    const props = vm._props
+    const propKeys = vm.$options._propKeys || []
+    for (let i = 0; i < propKeys.length; i++) {
+      const key = propKeys[i]
+      props[key] = propsData[key]
+    }
+    toggleObserving(true)
+    // keep a copy of raw propsData
+    vm.$options.propsData = propsData
+  }
 }
 
 export function callHook (vm, hook) {

@@ -44,3 +44,5 @@ export function isUnknownElement (tag) {
     return (unknownElementCache[tag] = /HTMLUnknownElement/.test(el.toString()))
   }
 }
+
+export const isTextInputType = makeMap('text,number,password,search,email,tel,url')
