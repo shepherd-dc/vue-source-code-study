@@ -1173,13 +1173,38 @@ function lifecycleMixin(SVue) {
     // const restoreActiveInstance = setActiveInstance(vm)
 
     var prevActiveInstance = activeInstance;
-    activeInstance = vm; // vm._vnode: 渲染vnode(子) <--> vm.$vnode: 占位vnode(父)
+    activeInstance = vm;
+    var prevEl = vm.$el;
+    var prevVnode = vm._vnode; // vm._vnode: 渲染vnode(子) <--> vm.$vnode: 占位vnode(父)
 
-    vm._vnode = vnode; // initial render
+    vm._vnode = vnode; // Vue.prototype.__patch__ is injected in entry points
+    // based on the rendering backend used.
 
-    vm.$el = vm.__patch__(vm.$el, vnode); // restoreActiveInstance()
+    if (!prevVnode) {
+      // initial render
+      vm.$el = vm.__patch__(vm.$el, vnode, false
+      /* removeOnly */
+      );
+    } else {
+      // updates
+      vm.$el = vm.__patch__(prevVnode, vnode);
+    } // restoreActiveInstance()
 
-    activeInstance = prevActiveInstance;
+
+    activeInstance = prevActiveInstance; // update __vue__ reference
+
+    if (prevEl) {
+      prevEl.__vue__ = null;
+    }
+
+    if (vm.$el) {
+      vm.$el.__vue__ = vm;
+    } // if parent is an HOC, update its $el as well
+
+
+    if (vm.$vnode && vm.$parent && vm.$vnode === vm.$parent._vnode) {
+      vm.$parent.$el = vm.$el;
+    }
   };
 }
 function mountComponent(vm, el) {
@@ -2881,7 +2906,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _vnode__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./vnode */ "./src/core/vdom/vnode.js");
 /* harmony import */ var core_instance_init__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! core/instance/init */ "./src/core/instance/init.js");
 /* harmony import */ var _instance_lifecycle__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../instance/lifecycle */ "./src/core/instance/lifecycle.js");
-/* harmony import */ var _helpers_index__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./helpers/index */ "./src/core/vdom/helpers/index.js");
+/* harmony import */ var _helpers_index__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./helpers/index */ "./src/core/vdom/helpers/index.js");
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 
@@ -2951,7 +2976,7 @@ tag // string
   Object(core_instance_init__WEBPACK_IMPORTED_MODULE_1__["resolveConstructorOptions"])(Ctor); // extract props
   // 把传递给组件的 props抽离出来，new Vnode()时作为 componentOptions中的一项传入
 
-  var propsData = Object(_helpers_index__WEBPACK_IMPORTED_MODULE_4__["extractPropsFromVNodeData"])(data, Ctor, tag); // install component management hooks onto the placeholder node
+  var propsData = Object(_helpers_index__WEBPACK_IMPORTED_MODULE_3__["extractPropsFromVNodeData"])(data, Ctor, tag); // install component management hooks onto the placeholder node
 
   installComponentHooks(data); // return a placeholder vnode
 
@@ -3232,7 +3257,8 @@ __webpack_require__.r(__webpack_exports__);
 
 
 function sameVnode(a, b) {
-  return a.key === b.key && (a.tag === b.tag && a.isComment === b.isComment && a.data === b.data && sameInputType(a, b) || a.isAsyncPlaceholder && a.asyncFactory === b.asyncFactory && !b.asyncFactory.error);
+  return a.key === b.key && (a.tag === b.tag && a.isComment === b.isComment && // (a.data) === (b.data) &&
+  sameInputType(a, b) || a.isAsyncPlaceholder && a.asyncFactory === b.asyncFactory && !b.asyncFactory.error);
 }
 
 function sameInputType(a, b) {
@@ -3502,14 +3528,13 @@ function createPatchFunction() {
     }
   }
 
-  return function patch(oldVnode, vnode, hydrating, removeOnly) {
+  return function patch(oldVnode, vnode, removeOnly) {
     if (!vnode) {
       return;
     }
 
     var isInitialPatch = false;
     var insertedVnodeQueue = [];
-    debugger;
 
     if (!oldVnode) {
       // empty mount (likely as component), create new root element
@@ -3518,7 +3543,8 @@ function createPatchFunction() {
 
       createElm(vnode, insertedVnodeQueue);
     } else {
-      // 如果有oldVnode(vm.$el), 将dom元素转化成虚拟dom——vnode, dom属性保存在oldVnode.elm上
+      debugger; // 如果有oldVnode(vm.$el), 将dom元素转化成虚拟dom——vnode, dom属性保存在oldVnode.elm上
+
       var isRealElement = oldVnode.nodeType; // 不是真实 dom节点且为同一个 Vnoe
 
       if (!isRealElement && sameVnode(oldVnode, vnode)) {

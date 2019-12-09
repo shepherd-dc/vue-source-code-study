@@ -8,7 +8,7 @@ function sameVnode (a, b) {
       (
         a.tag === b.tag &&
         a.isComment === b.isComment &&
-        (a.data) === (b.data) &&
+        // (a.data) === (b.data) &&
         sameInputType(a, b)
       ) || (
         (a.isAsyncPlaceholder) &&
@@ -286,7 +286,7 @@ export function createPatchFunction () {
     }
   }
 
-  return function patch (oldVnode, vnode, hydrating, removeOnly) {
+  return function patch (oldVnode, vnode, removeOnly) {
     if (!vnode) {
       return
     }
@@ -294,7 +294,6 @@ export function createPatchFunction () {
     let isInitialPatch = false
     const insertedVnodeQueue = []
 
-    debugger
     if (!oldVnode) {
       // empty mount (likely as component), create new root element
       // 组件patch时 isInitialPatch = true
@@ -302,6 +301,7 @@ export function createPatchFunction () {
       // 组件实例没有oldVnode(vm.$el)dom元素, 直接创建一个新的vnode
       createElm(vnode, insertedVnodeQueue)
     } else {
+      debugger
       // 如果有oldVnode(vm.$el), 将dom元素转化成虚拟dom——vnode, dom属性保存在oldVnode.elm上
       const isRealElement = oldVnode.nodeType
       // 不是真实 dom节点且为同一个 Vnoe
@@ -310,7 +310,7 @@ export function createPatchFunction () {
         patchVnode(oldVnode, vnode, insertedVnodeQueue, null, null, removeOnly)
       } else {
         if (isRealElement) {
-        // create an empty node and replace it
+          // create an empty node and replace it
           oldVnode = emptyNodeAt(oldVnode)
         }
       }
